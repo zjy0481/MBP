@@ -44,6 +44,19 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'base_station_list' %}">基站管理</a>
                 </li>
+                <hr>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'antenna' %}">天线状态</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'system_manage' %}">系统管理</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'gis' %}">GIS视图</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'log' %}">日志信息</a>
+                </li>
                 {% endif %}
             </ul>
         </div>

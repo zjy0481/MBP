@@ -26,9 +26,14 @@ urlpatterns = [
     path('terminals/<str:sn>/edit/', views.terminal_update, name='terminal_update'),
     path('terminals/<str:sn>/delete/', views.terminal_delete, name='terminal_delete'),
 
-    # --- 基站管理功能 (新添加的部分) ---
+    # --- 基站管理功能 ---
     path('base-stations/', views.base_station_list, name='base_station_list'),
     path('base-stations/add/', views.base_station_create, name='base_station_create'),
     path('base-stations/<str:bts_id>/edit/', views.base_station_update, name='base_station_update'),
     path('base-stations/<str:bts_id>/delete/', views.base_station_delete, name='base_station_delete'),
+
+    path('antenna/', views.antenna_view, name='antenna'),
+    path('system/', views.system_manage_view, name='system_manage'),
+    path('gis/', views.gis_view, name='gis'),
+    path('log/', views.log_view, name='log'),
 ]

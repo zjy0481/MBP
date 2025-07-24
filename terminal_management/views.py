@@ -277,3 +277,42 @@ def base_station_delete(request, bts_id):
 
     # 复用 data_confirm_delete.html 模板
     return render(request, 'data_confirm_delete.html', {'item': station})
+
+# @login_required
+# def antenna_view(request):
+#     return render(request, 'antenna.html')
+
+# @login_required
+# def system_manage_view(request):
+#     return render(request, 'system_manage.html')
+
+@login_required
+def antenna_view(request):
+    """渲染“天线状态”页面"""
+    # 目前只渲染模板框架，数据将通过WebSocket实时填充
+    context = {
+        'terminal_sn': "SN001" # 示例SN，后续可以动态获取
+    }
+    return render(request, 'antenna.html', context)
+
+@login_required
+def system_manage_view(request):
+    """渲染“系统管理”页面"""
+    context = {}
+    return render(request, 'system_manage.html', context)
+
+@login_required
+def gis_view(request):
+    """渲染“GIS视图”页面"""
+    # 我们可以传递一个初始的中心点坐标
+    context = {
+        'initial_lon': 118.878684,
+        'initial_lat': 32.021171,
+    }
+    return render(request, 'gis.html', context)
+
+@login_required
+def log_view(request):
+    """渲染“日志信息”页面"""
+    context = {}
+    return render(request, 'log.html', context)

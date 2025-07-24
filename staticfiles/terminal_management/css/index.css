@@ -1,0 +1,51 @@
+/* css reset 开始 */
+html,body{height: 100%;overflow: hidden;}
+html,body,h1,h2,h3,h4,h5,h6,p,ul,li{margin: 0px;padding: 0px;font:18px "微软雅黑";}
+a{text-decoration: none;display: block;}
+li{list-style: none;}
+img{display: block;}
+/* css reset 结束 */
+
+/* comment 开始 */
+.clearfix{*zoom: 1;}
+.clearfix:after{contain: size;display: block;clear: both;}
+/* comment 结束 */
+
+/* #content{} */
+
+/* 头部样式 结束 */
+#head {background: white!important;width: 100%;}
+#head .headMain{width: 1100px; height: 80px;margin: 0px auto;position: relative;background: url("images/banner.png") no-repeat;}
+#head .headMain > .logo{float: left;margin-top: 10px;margin-left: 20px;}
+#head .headMain > .navigate{float: right;margin-top: 50px;margin-right: 20px;}
+#head .headMain > .navigate > .list > li{float: left;margin-left: 30px;position: relative;}
+#head .headMain > .navigate > .list > li >img{float: left; margin-top: 3px;position: relative;}
+#head .headMain > .navigate > .list > li >a{float: left; margin-left: 2px;position: relative;color: darkblue;}
+#head .headMain > .navigate > .list > li .up{color: white;position: absolute;width: 0px;
+    /* height: 0px;*/overflow: hidden;transition: width 300ms;} 
+#head .headMain > .navigate > .list > li:hover .up{width: 100%;height: 100%;}
+#head .headMain > .arrow{width: 21px;height: 11px;background: url("images/triangle.png");
+                    position: absolute;left: 50%;bottom: -11px;transition: left 500ms;z-index:2}
+/* 头部样式 结束 */
+
+/* 内容区样式 开始*/
+#content{background: whitesmoke;position: relative;overflow: hidden;width: 100%;}
+#content .listPage {position: absolute;left: 0px;top: 0px;width: 100%;transition: 500ms top;}
+#content .listPage > li{position: relative;background-position: 50% 50%!important;}
+#content .listPage > li > section{width: 1100px;height: 600px; position: absolute;
+                                    left: 0px;right: 0px;top: 0px;bottom: 0px;margin: 0px auto;}
+/*#content .listPage > li > section > span > div{float: left; margin-left: 10px;}*/
+#content .listPage > .antenna{background: url("images/bgantenna.png") no-repeat;}
+#content .listPage > .satellite{background: url("images/bgsatellite.png") no-repeat;}
+#content .listPage > .device{background: url("images/bgdevice.png") no-repeat;}
+#content .listPage > .system{background: url("images/bgsystem.png") no-repeat;}
+#content .listPage > .log{background: url("images/bglog.png") no-repeat;}
+/*#content .listPage > .factory{background: url("images/bgfactory.png") no-repeat;}*/
+/* 导航圆点 */
+#content .listNavDot{position: fixed;right: 10px;top:50%;}
+#content .listNavDot > li{width: 12px;height: 12px;border: 2px solid lightskyblue;border-radius: 50%;margin-top: 10px;}
+/* 内容区样式 结束*/
+
+/* 注脚部分 */
+#footer {width: 100%; height: 30px; margin: 0px auto; position: fixed; bottom: 20px; alignment: center}
+

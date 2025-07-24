@@ -1,0 +1,2 @@
+[2025-07-25 04:57:03,619] server.py -> [line: 120] - INFO: HTTP/2 support not enabled (install the http2 and tls Twisted extras)
+[2025-07-25 04:57:03,703] selector_events.py -> [line: 64] - DEBUG: Using selector: SelectSelector

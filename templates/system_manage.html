@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}系统管理 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<script type="text/javascript" src="{% static 'js/systemmanage.js' %}"></script>
+
+{# 下面的HTML结构完全来自于您提供的 systemmanage.html 文件 #}
+<fieldset>
+    <legend>工作模式：</legend>
+    选择工作模式：
+    <select id="work_mode" value=1>
+        <option value=0> 自动模式 </option>
+        <option value=1> 手动模式 </option>
+    </select>
+    <button id="query_work_mode" onclick="onQuerySystemWorkMode()" style="margin-left:43px; width: 80px;">查  询</button>
+    <button id="set_work_mode" onclick="onSetSystemWorkMode()" style="margin-left:50px; width: 80px;">设 置</button>
+</fieldset>
+<fieldset>
+    <legend>系统复位：</legend>
+    <button id="set_business_reset" onclick="onSetBusinessReset()" style="margin-left:150px; width: 120px;">业务复位</button>
+    <button id="set_software_reset" onclick="onSetSoftwareReset()" style="margin-left:80px; width: 120px;">软件复位</button>
+</fieldset>
+<fieldset>
+    <legend>设置RTC时间：</legend>
+    <label>日期时间：</label>
+    <input type="datetime-local" id="datetime_rtc" step="1" >
+    <script>
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        const formattedDateTime = now.toISOString().slice(0, 19);
+        document.getElementById('datetime_rtc').value = formattedDateTime;
+    </script>
+    <button id="query_rtc" onclick="onQueryRtc()" style="margin-left:50px; width: 120px;">查询RTC配置</button>
+    <button id="set_rtc" onclick="onSetRtc()" style="margin-left:90px; width: 120px;">设置RTC</button>
+</fieldset>
+<fieldset>
+    <legend>上报参数设置：</legend>
+    <table width="100%" border="0px">
+        <tr>
+            <td width="300px">
+                IP 地址：<input type="text" id="ip_1" maxlength="3" onkeyup="value=value.replace(/[^\d]/g,'')" style="width: 30px"> -
+                <input type="text" id="ip_2" maxlength="3" onkeyup="value=value.replace(/[^\d]/g,'')" style="width: 30px"> -
+                <input type="text" id="ip_3" maxlength="3" onkeyup="value=value.replace(/[^\d]/g,'')" style="width: 30px"> -
+                <input type="text" id="ip_4" maxlength="3" onkeyup="value=value.replace(/[^\d]/g,'')" style="width: 30px">
+            </td>
+            <td>
+                端口号：<input type="number" id="port" min="0" max="65535" onkeyup="value=value.replace(/[^\d]/g,'')" style="width: 80px">
+            </td>
+            <td colspan="2">
+                <label for="update_mode">选择上报方式：</label>
+                <select id="update_mode">
+                    <option value=0> 不上报 </option>
+                    <option value=1 selected> 通过CPE上报 </option>
+                    <option value=2> 通过NB上报 </option>
+                </select>
+            </td>
+
+        </tr>
+        <tr>
+            <td width="100px">
+                <input id="with_rtc_time" type="checkbox">上报RTC时间
+            </td>
+            <td>
+                上报时间间隔：<input type="number" id="interval" min="0" max="65535" onkeyup="value=value.replace(/[^\d]/g,'')" style="width: 80px">
+            </td>
+            <td>
+                <button id="query_update_cfg_param" onclick="onQueryUpdateCfgParam()" style="margin-left:43px; width: 80px;">查  询</button>
+            </td>
+            <td>
+                <button id="set_update_cfg_param" onclick="onSetUpdateCfgParam()" style="margin-left:50px; width: 80px;">设 置</button>
+            </td>
+        </tr>
+    </table>
+</fieldset>
+<fieldset>
+        <legend>出厂版本设置：</legend>
+        <table width="100%" border="0px">
+            <tr>
+                <td>
+                    产品型号：
+                </td>
+                <td>
+                    <input id="product_mode" title="产品型号必须在7个字节内，字母和数字组成" pattern="[a-z, 0-9]" maxlength=7>
+                </td>
+                <td>
+                    产品序列号：
+                </td>
+                <td>
+                    <input id="product_sn" type="text" title="产品序列号必须在8个字节内，字母和数组组成" pattern="[a-z, 0-9]" maxlength=8>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    硬件版本：
+                </td>
+                <td>
+                    <input id="hardware_version" type="text" title="硬件版本在4个字节内，数学和小数点组成" pattern="[1-9, .]" maxlength=4>
+                </td>
+                <td>
+                    ADU软件版本：
+                </td>
+                <td>
+                    <input id="adu_software_version" title="ADU软件版本号不能修改" readonly>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    ACU软件版本：
+                </td>
+                <td>
+                    <input id="acu_software_version" title="ACU软件版本号不能修改" readonly>
+                </td>
+                <td>
+                    结构版本：
+                </td>
+                <td>
+                    <input id="construction_version" title="结构版本在4个字节内，数学和小数点组成" type="text" pattern="[1-9, .]" maxlength=4>
+                </td>
+            </tr>
+        </table>
+        <hr>
+        <button id="query_factory_info" onclick="onQueryFactoryParam()" style="width: 80px;margin-left: 610px;">查 询</button>
+        <button id="set_factory_info" onclick="onSetFactoryParam()" style="width: 80px;margin-left: 120px;">设 置</button>
+</fieldset>
+<fieldset>
+    <legend>升级版本：</legend>
+    <table width="100%" border="0px">
+        <tr>
+            <td>
+                ADU软件版本：
+            </td>
+            <td>
+                <input id="adu_software_file" type="file">
+                <button id="update_adu_software_file" style="width: 80px;">上传</button>
+                <button id="update_adu_software" style="width: 80px;">升级</button>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                ACU软件版本：
+            </td>
+            <td>
+                <input id="acu_software_file" type="file">
+                <button id="update_acu_software_file" style="width: 80px;">上传</button>
+                <button id="update_acu_software" style="width: 80px;">升级</button>
+            </td>
+        </tr>
+    </table>
+</fieldset>
+
+{% endblock %}

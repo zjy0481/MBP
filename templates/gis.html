@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}GIS视图 - {{ block.super }}{% endblock %}
+
+{% block content %}
+{# GIS页面专属的样式 #}
+<style type="text/css">
+  /* 确保地图容器占满父容器的高度 */
+  #map-container { height: 75vh; width: 100%; }
+  #map { height:100%; width:100%; }
+  /* 隐藏百度地图左下角的logo和版权信息 */
+  .anchorBL { display: none !important; }
+</style>
+
+<h2>GIS视图</h2>
+<hr>
+
+{# 地图容器 #}
+<div id='map-container'>
+  <div id='map'></div>
+</div>
+
+{# 引入所有百度地图相关的JS库 #}
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=3.0&ak=M3vTdD2f7ZjMFKold3TbOnEc6eYHx869"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/CurveLine/1.5/src/CurveLine.min.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/TextIconOverlay/1.2/src/TextIconOverlay_min.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/MarkerClusterer/1.2/src/MarkerClusterer_min.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/TrackAnimation/src/TrackAnimation_min.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/TrafficControl/1.4/src/TrafficControl_min.js"></script>
+<link rel="stylesheet" type="text/css" href="http://api.map.baidu.com/library/TrafficControl/1.4/src/TrafficControl_min.css"/>
+
+{# 将您提供的 gis.html 中的JS代码完整地移植到这里 #}
+<script type="text/javascript">
+  function receiveData(type, data) {
+    objName_receiveData(type, data);
+  }
+
+  var map = new BMap.Map('map', {minZoom:4, maxZoom:19, enableMapClick:false, mapType:BMAP_NORMAL_MAP});
+  // 使用从Django视图传递过来的初始坐标，如果视图没有提供，则使用默认值
+  // var point = new BMap.Point({{ initial_lon|default:118.878684 }}, {{ initial_lat|default:32.021171 }});
+  var point = new BMap.Point(118.878684,32.021171);
+  map.centerAndZoom(point, 18);
+  map.enableDragging();
+  map.enableScrollWheelZoom();
+  map.enableDoubleClickZoom();
+  map.enableInertialDragging();
+  map.enableContinuousZoom();
+  map.enablePinchToZoom();
+  map.enableAutoResize();
+  map.addControl(new BMap.NavigationControl({anchor:BMAP_ANCHOR_TOP_LEFT, type:BMAP_NAVIGATION_CONTROL_LARGE}));
+  var ctrlTra = new BMapLib.TrafficControl({showPanel:false});
+  ctrlTra.setAnchor(BMAP_ANCHOR_BOTTOM_RIGHT);
+  map.addControl(ctrlTra);
+  map.addEventListener('click', function(e) {
+    receiveData('point', e.point.lng + ',' + e.point.lat);
+  });
+  
+  function getPoints(points) {
+    var pts = []
+    var listPoint = points.split('|');
+    var len = listPoint.length
+    for (var i = 0; i < len; i++) {
+      var list = listPoint[i].split(',');
+      var pot = new BMap.Point(list[0], list[1]);
+      pts.push(pot);
+    }
+    return pts;
+  }
+  
+  function getMarkers(points) {
+    var markers = []
+    var listPoint = points.split('|');
+    var len = listPoint.length
+    for (var i = 0; i < len; i++) {
+      var list = listPoint[i].split(',');
+      var pot = new BMap.Point(list[0], list[1]);
+      var marker = new BMap.Marker(pot);
+      markers.push(marker);
+    }
+    return markers;
+  }
+  
+  function getBounds() {
+    var bs = map.getBounds();
+    var bssw = bs.getSouthWest();
+    var bsne = bs.getNorthEast();
+    var bsce = bs.getCenter();
+    var rect = bssw.lng + ',' + bssw.lat + ',' + bsne.lng + ',' + bsne.lat + ',' + bsce.lng + ',' + bsce.lat + ',' + map.getZoom();
+    receiveData('bounds', rect);
+  }
+  
+  function getBoundary() {
+    for (var i = 0; i < polygons.length; i++) {
+      var polyline = polygons[i];
+      var pts = polyline.getPath();
+      var result = '';
+      for (var j = 0; j < pts.length; j++) {
+        result += pts[j].lng + ',' + pts[j].lat + ';';
+      }
+      receiveData('newboundary', result);
+    }
+  }
+  
+  function getZoom() {
+    var zoom = map.getZoom();
+    receiveData('zoom', zoom);
+  }
+  
+  function setCenterAndZoom(lng, lat, zoom = -1) {
+    if (zoom < 0) {
+    	zoom = map.getZoom();
+    }
+    var point = new BMap.Point(lng, lat);
+    map.centerAndZoom(point, zoom);
+  }
+  
+  var geo = new BMap.Geocoder();
+  function getPointByAddr(addr) {
+    geo.getPoint(addr, function(result) {
+      if (result) {
+        receiveData('geocoder', result.lng + ',' + result.lat);
+      }
+    });
+  }
+  
+  function getAddrByPoint(point) {
+    var list = point.split(',');
+    var pot = new BMap.Point(list[0], list[1]);
+    geo.getLocation(pot, function(result) {
+      if (result) {
+        receiveData('geocoder', result.address);
+      }
+    });
+  }
+  
+  function addClick(marker, name, addr, title, tips, width, action){
+    if (title == '' && name != '') {
+      title = '<div style="color:#CE5521;font-size:15px;">' + name + '</div>';
+    }
+    if (tips == '' && addr != '') {
+      tips = '<table><tr style="vertical-align:top;line-height:25px;font-size:12px;"><td>地址：</td><td>' + addr + '</td></tr></table>';
+    }
+    var infoWindow = new BMap.InfoWindow(tips, {title:title, width:width});
+    var markerClick = function() {
+      if (action == 1) {
+        marker.openInfoWindow(infoWindow);
+      } else if (action == 2) {
+        receiveData('marker', '名称: '+ title + '  地址: ' + addr);
+      }
+    };
+    marker.addEventListener('click', markerClick);
+  }
+  
+  function onMouseover(e){
+    var p = e.target;
+    p.getLabel().show();
+  }
+  
+  function onMouseout(e){
+    var p = e.target;
+    p.getLabel().hide();
+  }
+  
+  function addMarker(name, addr, title, tips, width, point, action, animation, iconfile, iconindex, rotation = 0) {
+    var list = point.split(',');
+    var pot = new BMap.Point(list[0], list[1]);
+    var label = new BMap.Label(name, {"offset":new BMap.Size(20, -10)});
+    var marker;
+    if (action == 1) {
+      var size = 50;
+      if (iconindex) {
+        size = iconindex;
+      }
+      var icon = new BMap.Icon(iconfile, new BMap.Size(23, 25), {anchor: new BMap.Size(10, 25), imageOffset: new BMap.Size(0, 0 - iconindex * 25)});
+      marker = new BMap.Marker(pot, {icon: icon, rotation: rotation});
+    }else if(action ==2){
+      var size = 50;
+      if (iconindex) {
+        size = iconindex;
+      }
+      label = new BMap.Label(name, {"offset":new BMap.Size(size, -10)});
+      var icon = new BMap.Icon(iconfile, new BMap.Size(size, size), {anchor: new BMap.Size(size/2, size)});
+      marker = new BMap.Marker(pot, {icon: icon, rotation: rotation});
+      marker.setTitle(title);
+      marker.setTop(true);
+    }else{
+      marker = new BMap.Marker(pot);
+    }
+    map.addOverlay(marker);
+    if (name != '') {
+      marker.setLabel(label);
+    }
+    addClick(marker, name, addr, title, tips, width, action);
+    if (animation == 1) {
+      marker.setAnimation(BMAP_ANIMATION_BOUNCE);
+    } else if (animation == 2) {
+      marker.setAnimation(BMAP_ANIMATION_DROP);
+    }
+  }
+  
+  function moveMarker(name, point, content, rotation = 0) {
+    if (name.length == 0) {
+      return;
+    }
+    var allOverlay = map.getOverlays();
+    var len = allOverlay.length;
+    for (var i = 0; i < len; i++) {
+      var overlay = allOverlay[i];
+      if (overlay.toString() != '[object Marker]') {
+        continue;
+      }
+      var title = overlay.getTitle();
+      if (title == name) {
+        var list = point.split(',');
+        var pot = new BMap.Point(list[0], list[1]);
+        var marker = allOverlay[i];
+        marker.setPosition(pot);
+        marker.setRotation(rotation);
+        marker.setTop(true);
+        var label = marker.getLabel();
+        label.setContent(content);
+        break;
+      }
+    }
+  }
+  
+  function deleteMarker(name) {
+    var allOverlay = map.getOverlays();
+    var len = allOverlay.length;
+    for (var i = 0; i < len; i++) {
+      var overlay = allOverlay[i];
+      if (overlay.toString() != '[object Marker]') {
+        continue;
+      }
+      if (name.length == 0) {
+        map.removeOverlay(overlay);
+      } else {
+        var title = overlay.getTitle();
+        if (title == name) {
+          map.removeOverlay(allOverlay[i]);
+          break;
+        }
+      }
+    }
+  }
+  
+  function deleteOverlay(type) {
+    var allOverlay = map.getOverlays();
+    var len = allOverlay.length;
+    for (var i = 0; i < len; i++) {
+      var overlay = allOverlay[i];
+      if (type.length == 0) {
+        map.removeOverlay(overlay);
+      } else {
+        var strType = '[object ' + type +']'
+        if (overlay.toString() == strType) {
+          map.removeOverlay(overlay);
+        }
+      }
+    }
+  }
+  
+  function getProperty(color, weight, opacity) {
+    var property = {strokeColor:color, strokeWeight:weight, strokeOpacity:opacity};
+    return property;
+  }
+  
+  function addPolyline(points, color, weight, opacity) {
+    var pts = getPoints(points);
+    var property = getProperty(color, weight, opacity);
+    var polyline = new BMap.Polyline(pts, property);
+    map.addOverlay(polyline);
+  }
+  
+  function addPolygon(points, color, weight, opacity) {
+    var pts = getPoints(points);
+    var property = getProperty(color, weight, opacity);
+    var polygon = new BMap.Polygon(pts, property);
+    map.addOverlay(polygon);
+  }
+  
+  function addRectangle(points, color, weight, opacity) {
+    var listPoint = points.split('|');
+    if (listPoint.length != 2) {
+      return;
+    }
+    var list1 = listPoint[0].split(',');
+    var list2 = listPoint[1].split(',');
+    var ptStart = new BMap.Point(list1[0], list1[1]);
+    var ptEnd = new BMap.Point(list2[0], list2[1]);
+    var pt1 = new BMap.Point(ptStart.lng, ptStart.lat);
+    var pt2 = new BMap.Point(ptEnd.lng, ptStart.lat);
+    var pt3 = new BMap.Point(ptEnd.lng, ptEnd.lat);
+    var pt4 = new BMap.Point(ptStart.lng, ptEnd.lat);
+    var property = getProperty(color, weight, opacity);
+    var rectangle = new BMap.Polygon([pt1,pt2,pt3,pt4], property);
+    map.addOverlay(rectangle);
+  }
+  
+  function addCircle(points, radius, color, weight, opacity) {
+    var listPoint = points.split('|');
+    var list = listPoint[0].split(',');
+    var ptCenter = new BMap.Point(list[0], list[1]);
+    var property = getProperty(color, weight, opacity);
+    var circle = new BMap.Circle(ptCenter, radius, property);
+    map.addOverlay(circle);
+  }
+  
+  function addCurveLine(points, color, weight, opacity) {
+    var pts = getPoints(points);
+    var property = getProperty(color, weight, opacity);
+    var curveLine = new BMapLib.CurveLine(pts, property);
+    map.addOverlay(curveLine);
+    curveLine.enableEditing();
+  }
+  
+  var polygons = [];
+  function addBoundary(cityname, callfun, edit, color, weight, opacity) {
+    map.clearOverlays();
+    var bdary = new BMap.Boundary();
+    bdary.get(cityname, function(rs) {
+      var count = rs.boundaries.length;
+      if (count > 0) {
+        if (callfun) {
+          receiveData('boundary', rs.boundaries);
+        }
+        var pointArray = [];
+        for (var i = 0; i < count; i++) {
+          var property = getProperty(color, weight, opacity);
+          var ply = new BMap.Polygon(rs.boundaries[i], property);
+          if (edit) {
+            ply.enableEditing();
+          }
+          polygons.push(ply);
+          map.addOverlay(ply);
+          pointArray = pointArray.concat(ply.getPath());
+        }
+        map.setViewport(pointArray);
+      }
+    });
+  }
+  
+  function addMarkerClusterer(points) {
+    var markers = getMarkers(points);
+    var markerClusterer = new BMapLib.MarkerClusterer(map, {markers:markers});
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}天线状态 - {{ block.super }}{% endblock %}
+
+{% block content %}
+
+{# 引入此页面专属的JS文件 #}
+<script type="text/javascript" src="{% static 'js/antenna.js' %}"></script>
+
+{# ---------------- #}
+<table width="100%">
+    <tr>
+        <td width="60%">
+            <fieldset id="antenna_status">
+                <legend>系统状态：</legend>
+                <table border="0px" width="100%">
+                    <tr>
+                        <td align="center">
+                            <table>
+                               <tr>
+                                    <td align="center">无状态</td>
+                               </tr>
+                               <tr>
+                                   <td align="center">
+                                       <li class="statusLight" id="light_none" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                   </td>
+                               </tr>
+                            </table>
+                        </td>
+                        <td align="center">
+                            <table>
+                               <tr>
+                                    <td align="center">初始化</td>
+                               </tr>
+                               <tr>
+                                   <td align="center">
+                                       <li class="statusLight" id="light_init" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                   </td>
+                               </tr>
+                            </table>
+                        </td>
+                        <td align="center">
+                            <table>
+                                <tr>
+                                    <td align="center">预搜索</td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <li class="statusLight" id="light_presearch" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td align="center">
+                            <table>
+                                <tr>
+                                    <td align="center">跟&nbsp;&nbsp;踪</td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <li class="statusLight" id="light_track" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td align="center">
+                            <table>
+                                <tr>
+                                    <td align="center">故&nbsp;&nbsp;障</td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <li class="statusLight" id="light_fault" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+        </td>
+        <td width="40%">
+            <fieldset id="link_status">
+                <legend>无线网络状态：</legend>
+                <table border="0px" width="100%">
+                    <tr>
+                        <td align="center">
+                            <table>
+                                <tr>
+                                    <td align="center">断&nbsp;&nbsp;&nbsp;&nbsp;联</td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <li class="statusLight" id="dtu_unlink" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td align="center">
+                            <table>
+                                <tr>
+                                    <td align="center">拨号成功</td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <li class="statusLight" id="dtu_state_dial" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"></li>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td align="center">
+                            <table>
+                                <tr>
+                                    <td align="center">驻留小区</td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <li class="statusLight" id="dtu_state_normal" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </fieldset>
+        </td>
+    </tr>
+</table>
+
+<table width="100%" border="0px">
+    <tr>
+        <td width="70%">
+            <fieldset>
+                <legend>MBP状态参数：</legend>
+                <table width="100%">
+                    <tr>
+                        <td>基站名称：</td>
+                        <td><input id="bts_name" type="text" readonly></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>基站经度：</td>
+                        <td><input id="bts_longitude" type="number" readonly></td>
+
+                        <td>基站纬度：</td>
+                        <td><input id="bts_latitude" type="number" readonly></td>
+                    </tr>
+                    <tr><td colspan="4"><hr></td> </tr>
+                    <tr>
+                        <td>当前经度：</td>
+                        <td><input id="longitude" type="number" readonly></td>
+
+                        <td>当前纬度：</td>
+                        <td><input id="latitude" type="number" readonly></td>
+                    </tr>
+                    <tr>
+                        <td>理论方位角：</td>
+                        <td><input id="theory_yaw" type="number" readonly></td>
+
+                        <td>当前方位角：</td>
+                        <td><input id="yaw" type="number" readonly></td>
+                    </tr>
+                    <tr>
+                        <td>理论俯仰角：</td>
+                        <td><input id="theory_pitch" type="number" readonly disabled></td>
+
+                        <td>当前俯仰角：</td>
+                        <td><input id="pitch" type="number" readonly></td>
+                    </tr>
+                    <tr>
+                        <td>方位限位</td>
+                        <td>
+                            <input id="yaw_limit" type="text" readonly>
+                        </td>
+
+                        <td>当前横滚角：</td>
+                        <td><input id="roll" type="number" readonly></td>
+                    </tr>
+                    <tr>
+                        <td>温度：</td>
+                        <td><input id="temperature" type="number" readonly></td>
+
+                        <td>湿度：</td>
+                        <td><input id="humidity" type="number" readonly></td>
+                    </tr>
+
+                </table>
+            </fieldset>
+        </td>
+        <td width="30%">
+            <table border="0px" width="100%" height="100%">
+                <tr height="25%">
+                    <td align="center">
+                    <fieldset>
+                        <legend>网络速率:</legend>
+                        <div id="link_speed"><h4>上行：0bps&nbsp;&nbsp;下行：0bps</h4></div>
+                    </fieldset>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                    <fieldset id="RSRP">
+                    <legend>RSRP:</legend>
+                        <table width="100%">
+                            <tr>
+                                <td width="50%">
+                                    <div id="rsrp_value" align="center"><h1> -80dB </h1></div>
+                                </td>
+                                <td width="50%">
+                                    <meter id="rsrp_meter" value="70" min="0" low="30" high="70" max="100" optimum="70"
+                                           style="height: 50px; width: 100px; transform: rotate(270deg);" ></meter>
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<table width="100%">
+    <tr>
+        <td>
+            <table>
+                <tr>
+                    <td>
+                    <fieldset>
+                        <legend>驻留小区网络质量：</legend>
+                            <table>
+                                <tr>
+                                    <td>运营商：</td>
+                                    <td><input id="dtu_plmn" readonly></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>制式：</td>
+                                    <td>小区ID：</td>
+                                    <td>PCI：</td>
+                                </tr>
+                                <tr>
+                                    <td><input id="dtu_standard" readonly></td>
+                                    <td><input id="dtu_cellid" readonly></td>
+                                    <td><input id="dtu_pci" readonly></td>
+                                </tr>
+                                <tr>
+                                    <td>信号接收功率：</td>
+                                    <td>信号强度指示：</td>
+                                    <td>信噪比：</td>
+                                </tr>
+                                <tr>
+                                    <td><input id="dtu_rsrp" readonly></td>
+                                    <td><input id="dtu_rssi" readonly></td>
+                                    <td><input id="dtu_sinr" readonly></td>
+                                </tr>
+                            </table>
+                    </fieldset>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <fieldset>
+                            <legend>工作模式：</legend>
+                            工作模式：
+                            <select id="work_mode" value=1>
+                                <option value=0> 自动模式 </option>>
+                                <option value=1> 手动模式 </option>
+                            </select>
+                            <button id="query_work_mode" onclick="querySystemWorkMode()" style="margin-left:50px; width: 80px;">查  询</button>
+                            <button id="set_work_mode" disabled="true" onclick="setSystemWorkMode()" style="margin-left:50px; width: 80px;">设 置</button>
+                        </fieldset>
+                    </td>
+                </tr>
+            </table>
+        </td>
+        <td>
+            <fieldset>
+                <legend>手动控制：</legend>
+                <table border="0px" width="100%" height="100%">
+                    <tr>
+                        <td colspan="3">
+                            <select id="turn_mode">
+                                <option value="0" disabled="true">绝对值模式</option>
+                                <option value="1" selected>增 量 模 式</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr><td colspan="5"><hr></td> </tr>
+                    <tr>
+                        <td width="50px"></td>
+                        <td align="center">
+                        </td>
+                        <td align="center"><button id="turn_up" style="background: url({% static 'images/up.png' %}) no-repeat; width: 35px; height: 35px;" title="俯仰向上" onclick="onTurnUp()"></button></td>
+                        <td align="center">
+                        </td>
+                        <td width="50px"></td>
+                    </tr>
+                    <tr>
+                        <td width="50px"></td>
+                        <td align="center"><button id="turn_left" style="background: url({% static 'images/left.png' %}) no-repeat; width: 35px; height: 35px;" title="方位向左" onclick="onTurnLeft()"></button></td>
+                        <td align="center"><input id="turn_angle" type="number" align="center" value="0" maxlength="3" min="0" max="60" title="调节角度" style="font-size: 16px; width: 40px;height: 25px;text-align: center;"></td>
+                        <td align="center"><button id="turn_right" style="background: url({% static 'images/right.png' %}) no-repeat; width: 35px; height: 35px;" title="方位向右" onclick="onTurnRight()"></button></td>
+                        <td width="50px"></td>
+                    </tr>
+                    <tr>
+                        <td width="50px"></td>
+                        <td align="center">
+                        </td>
+                        <td align="center"><button id="turn_down" style="background: url({% static 'images/down.png' %}) no-repeat; width: 35px; height: 35px;" title="俯仰向下" onclick="onTurnDown()"></button></td>
+                        <td align="center">
+                        </td>
+                        <td width="50px"></td>
+                    </tr>
+                </table>
+            </fieldset>
+        </td>
+    </tr>
+</table>
+
+<fieldset id="deviceStatus">
+    <legend>设备状态:</legend>
+    <table border="0px" width="100%">
+        <tr>
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">惯  导</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="IMUState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">DGPS</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="DGPSState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">存  储</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="storageState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td align="center">
+                    <button id="query_devices_status" onclick="queryDevicesStatus()" style="width: 80px;">查 询</button>
+            </td>
+        </tr>
+        <tr>
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">方位电机</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="yawMotoState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">俯仰电机</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="pitchMotoState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">方位限位</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="yawLimitState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+            <td align="center">
+                <table>
+                    <tr>
+                        <td align="center">俯仰限位</td>
+                    </tr>
+                    <tr>
+                        <td align="center">
+                            <li class="statusLight" id="pitchLimitState" style="width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                        box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;"> </li>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+
+        </tr>
+    </table>
+</fieldset>
+{% endblock %}

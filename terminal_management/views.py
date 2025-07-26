@@ -134,9 +134,11 @@ def terminal_create(request):
         form = TerminalInfoForm(request.POST)
         if form.is_valid():
             data = form.cleaned_data
+            ship_mmsi = data['ship'].mmsi
+
             success, result_or_error = services.create_terminal(
                 sn=data['sn'],
-                ship_call_sign=data['ship_call_sign'],
+                ship_mmsi=ship_mmsi,
                 ip_address=data['ip_address'],
                 port_number=data['port_number']
             )

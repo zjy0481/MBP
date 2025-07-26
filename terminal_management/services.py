@@ -103,20 +103,22 @@ def get_terminal_by_sn(sn):
     except Exception as e:
         return (False, f"查询端站时发生未知错误: {e}")
 
-def create_terminal(sn, ship_call_sign, ip_address=None, port_number=None):
+def create_terminal(sn, ship_mmsi, ip_address=None, port_number=None):
     """创建一个新的端站。"""
     try:
-        with transaction.atomic():
-            ship = ShipInfo.objects.get(call_sign=ship_call_sign)
-            terminal = TerminalInfo.objects.create(
-                sn=sn,
-                ship=ship,
-                ip_address=ip_address,
-                port_number=port_number
-            )
-            return (True, terminal)
+        # 通过 mmsi 获取到 ShipInfo 的实例对象
+        ship_instance = ShipInfo.objects.get(mmsi=ship_mmsi)
+        
+        # 创建 TerminalInfo 对象，并将获取到的 ship_instance 赋值给 ship 字段
+        terminal = TerminalInfo.objects.create(
+            sn=sn,
+            ship=ship_instance,  # 直接传递整个 ship 对象
+            ip_address=ip_address,
+            port_number=port_number
+        )
+        return (True, terminal)
     except ShipInfo.DoesNotExist:
-        return (False, f"创建失败：呼号为 '{ship_call_sign}' 的船舶不存在。")
+        return (False, f"创建失败：mmsi为 '{ship_mmsi}' 的船舶不存在。")
     except IntegrityError:
         return (False, f"创建失败：SN码 '{sn}' 已存在。")
     except Exception as e:

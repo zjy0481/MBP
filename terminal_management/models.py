@@ -64,9 +64,8 @@ class TerminalInfo(models.Model):
     # to_field='call_sign' 指定了外键关联到 ShipInfo 表的 call_sign 字段，而不是默认的主键 mmsi。
     ship = models.ForeignKey(
         to='ShipInfo', 
-        on_delete=models.CASCADE, 
-        to_field='call_sign',
-        verbose_name="所属船舶呼号"
+        on_delete=models.CASCADE,
+        verbose_name="所属船舶"
     )
     ip_address = models.GenericIPAddressField(
         verbose_name="IP地址",

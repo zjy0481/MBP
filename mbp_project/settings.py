@@ -151,3 +151,5 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+ALLOWED_HOSTS = ['*'] # 允许所有主机访问，仅限开发环境

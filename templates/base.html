@@ -55,5 +55,38 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const dataSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/data/'
+        );
+    
+        dataSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const message = data.message;
+            console.log('收到实时数据:', message);
+    
+            if (message.type === 'ship_update') {
+                // 在这里编写更新船舶信息UI的逻辑
+                // 例如：找到 id 对应的表格行并更新其内容
+                console.log(`船舶 ${message.ship_id} 的信息已更新`);
+                // location.reload(); // 最简单但体验最差的方式
+            } else if (message.type === 'station_update') {
+                // 更新端站信息UI的逻辑
+                console.log(`端站 ${message.station_id} 的信息已更新`);
+            } else if (message.type === 'ship_delete') {
+                // 处理船舶被删除的逻辑，例如移除表格中的某一行
+                console.log(`船舶 ${message.ship_id} 已被删除`);
+                const row = document.getElementById(`ship-row-${message.ship_id}`);
+                if (row) {
+                    row.remove();
+                }
+            }
+        };
+    
+        dataSocket.onclose = function(e) {
+            console.error('WebSocket 连接意外关闭!');
+        };
+    </script>
 </body>
 </html>

@@ -1,3 +1,4 @@
 *.log
 *.exe
+*.pyc
 **/__pycache__

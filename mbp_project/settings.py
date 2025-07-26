@@ -34,6 +34,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -41,7 +42,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     
-    'terminal_management',
+    #'terminal_management',
+    'terminal_management.apps.TerminalManagementConfig',
 ]
 
 MIDDLEWARE = [
@@ -134,3 +136,16 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_REDIRECT_URL = 'home'  # 登录成功后跳转的URL名称
 LOGOUT_REDIRECT_URL = 'home' # 登出成功后跳转的URL名称
+
+# 指定项目的 ASGI 应用
+ASGI_APPLICATION = 'mbp_project.asgi.application'
+
+# 配置 Channel Layer
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)], # 您的 Redis 服务器地址和端口
+        },
+    },
+}

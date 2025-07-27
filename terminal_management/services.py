@@ -124,12 +124,13 @@ def create_terminal(sn, ship_mmsi, ip_address=None, port_number=None):
     except Exception as e:
         return (False, f"创建端站时发生未知错误: {e}")
 
-def update_terminal(sn, new_ship_call_sign, new_ip_address=None, new_port_number=None):
+def update_terminal(sn, new_ship_mmsi, new_ip_address=None, new_port_number=None):
     """更新一个已存在的端站信息。"""
     try:
         with transaction.atomic():
             terminal = TerminalInfo.objects.get(sn=sn)
-            ship = ShipInfo.objects.get(call_sign=new_ship_call_sign)
+            # 通过 mmsi 查找新的所属船舶
+            ship = ShipInfo.objects.get(mmsi=new_ship_mmsi)
             terminal.ship = ship
             terminal.ip_address = new_ip_address
             terminal.port_number = new_port_number
@@ -138,7 +139,7 @@ def update_terminal(sn, new_ship_call_sign, new_ip_address=None, new_port_number
     except TerminalInfo.DoesNotExist:
         return (False, f"更新失败：SN码为 '{sn}' 的端站不存在。")
     except ShipInfo.DoesNotExist:
-        return (False, f"更新失败：新的所属船舶呼号 '{new_ship_call_sign}' 不存在。")
+        return (False, f"更新失败：新的所属船舶MMSI '{new_ship_mmsi}' 不存在。")
     except Exception as e:
         return (False, f"更新端站时发生未知错误: {e}")
 

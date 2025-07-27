@@ -1,6 +1,7 @@
 # terminal_management/views.py
 from django.shortcuts import render, redirect
 from django.contrib.auth import login
+from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from . import services
@@ -136,13 +137,16 @@ def terminal_create(request):
             data = form.cleaned_data
             ship_mmsi = data['ship'].mmsi
 
+            # 调用 services.create_terminal
             success, result_or_error = services.create_terminal(
                 sn=data['sn'],
                 ship_mmsi=ship_mmsi,
-                ip_address=data['ip_address'],
-                port_number=data['port_number']
+                # 使用 .get() 来安全地获取可选字段
+                ip_address=data.get('ip_address'),
+                port_number=data.get('port_number')
             )
             if success:
+                #messages.success(request, f"端站 {result_or_error.sn} 创建成功！")
                 return redirect('terminal_list')
             else:
                 form.add_error(None, result_or_error)
@@ -156,6 +160,7 @@ def terminal_update(request, sn):
     """编辑端站信息"""
     success, terminal_or_error = services.get_terminal_by_sn(sn)
     if not success:
+        messages.error(request, terminal_or_error)
         return redirect('terminal_list')
     
     terminal = terminal_or_error
@@ -164,31 +169,22 @@ def terminal_update(request, sn):
         form = TerminalInfoForm(request.POST, instance=terminal)
         if form.is_valid():
             data = form.cleaned_data
+            # 从表单数据中获取新选择的船舶的 mmsi
+            new_ship_mmsi = data['ship'].mmsi
             
-            # 调用服务函数来更新。
-            # 不允许修改SN，所以服务函数不需要接收新的SN。
             success, result_or_error = services.update_terminal(
-                sn=sn, # 使用从URL传入的原始sn定位记录
-                new_ship_call_sign=data['ship_call_sign'],
-                new_ip_address=data['ip_address'],
-                new_port_number=data['port_number']
+                sn=sn,
+                new_ship_mmsi=new_ship_mmsi,
+                new_ip_address=data.get('ip_address'),
+                new_port_number=data.get('port_number')
             )
             if success:
+                messages.success(request, f"端站 {result_or_error.sn} 更新成功！")
                 return redirect('terminal_list')
             else:
                 form.add_error(None, result_or_error)
     else:
-        # GET 请求时，用初始数据填充表单
-        initial_data = {
-            'sn': terminal.sn,
-            'ship_call_sign': terminal.ship.call_sign,
-            'ip_address': terminal.ip_address,
-            'port_number': terminal.port_number,
-        }
-        form = TerminalInfoForm(initial=initial_data)
-        
-        form.fields['sn'].widget.attrs['readonly'] = True
-        form.fields['sn'].widget.attrs['title'] = 'SN码作为主键，不允许修改'
+        form = TerminalInfoForm(instance=terminal)
 
     return render(request, 'terminal_form.html', {'form': form, 'form_title': f'编辑端站: {terminal.sn}'})
 

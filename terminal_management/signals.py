@@ -23,10 +23,7 @@ def ship_update_handler(sender, instance, **kwargs):
     }
     async_to_sync(channel_layer.group_send)(
         'data_updates',
-        {
-            'type': 'send_update',
-            'message': message
-        }
+        {'type': 'send_update', 'message': message}
     )
 
 @receiver(post_save, sender=TerminalInfo)
@@ -38,7 +35,8 @@ def terminal_update_handler(sender, instance, **kwargs):
     message = {
         'type': 'terminal_update',
         'sn': instance.sn,
-        'ship_call_sign': instance.ship.call_sign,
+        'ship_mmsi': instance.ship.mmsi,
+        'ship_name': instance.ship.ship_name,
         'ip_address': instance.ip_address,
         'port_number': instance.port_number
     }
@@ -65,6 +63,8 @@ def basestation_update_handler(sender, instance, **kwargs):
         {'type': 'send_update', 'message': message}
     )
 
+# --- 删除信号处理器 ---
+
 @receiver(post_delete, sender=ShipInfo)
 def ship_delete_handler(sender, instance, **kwargs):
     """
@@ -80,13 +80,30 @@ def ship_delete_handler(sender, instance, **kwargs):
         {'type': 'send_update', 'message': message}
     )
 
-# 您可以根据需要，为 TerminalInfo 和 BaseStationInfo 添加类似的删除信号处理器
 @receiver(post_delete, sender=TerminalInfo)
 def terminal_delete_handler(sender, instance, **kwargs):
+    """
+    当 端站信息 被删除后，发送 WebSocket 消息。
+    """
     channel_layer = get_channel_layer()
     message = {
         'type': 'terminal_delete',
         'sn': instance.sn,
+    }
+    async_to_sync(channel_layer.group_send)(
+        'data_updates',
+        {'type': 'send_update', 'message': message}
+    )
+
+@receiver(post_delete, sender=BaseStationInfo)
+def basestation_delete_handler(sender, instance, **kwargs):
+    """
+    当 基站信息 被删除后，发送 WebSocket 消息。
+    """
+    channel_layer = get_channel_layer()
+    message = {
+        'type': 'basestation_delete',
+        'bts_id': instance.bts_id,
     }
     async_to_sync(channel_layer.group_send)(
         'data_updates',

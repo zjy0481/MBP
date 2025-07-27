@@ -65,24 +65,28 @@
             const data = JSON.parse(e.data);
             const message = data.message;
             console.log('收到实时数据:', message);
-            location.reload();
+            // location.reload();
             
-            // todo 现在只做了页面整体刷新，后续考虑进行优化，仅做局部刷新
-            if (message.type === 'ship_update') {
-                // 在这里编写更新船舶信息UI的逻辑
-                // 例如：找到 id 对应的表格行并更新其内容
-                console.log(`船舶 ${message.ship_id} 的信息已更新`);
-                // location.reload(); // 最简单但体验最差的方式
-            } else if (message.type === 'station_update') {
-                // 更新端站信息UI的逻辑
-                console.log(`端站 ${message.station_id} 的信息已更新`);
-            } else if (message.type === 'ship_delete') {
-                // 处理船舶被删除的逻辑，例如移除表格中的某一行
-                console.log(`船舶 ${message.ship_id} 已被删除`);
-                const row = document.getElementById(`ship-row-${message.ship_id}`);
-                if (row) {
-                    row.remove();
-                }
+            // 1. 定义哪些页面是希望自动刷新的“列表页”
+            const listPages = [
+                '/', // 首页
+                '/ships/',
+                '/terminals/',
+                '/base-stations/'
+            ];
+
+            // 2. 获取当前页面的路径
+            const currentPage = window.location.pathname;
+
+            // 3. 判断当前页面是否在我们的“列表页”清单中
+            if (listPages.includes(currentPage)) {
+                // 如果是，则执行刷新
+                console.log('当前在列表页，执行刷新...');
+                location.reload();
+            } else {
+                // 如果不是（例如在 /terminals/add/ 或 /ships/edit/ 等表单页），
+                // 则什么也不做，让服务器的 redirect 指令来完成跳转。
+                console.log('当前在表单页，不执行刷新，等待服务器跳转...');
             }
         };
     

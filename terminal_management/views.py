@@ -148,6 +148,7 @@ def terminal_create(request):
             if success:
                 #messages.success(request, f"端站 {result_or_error.sn} 创建成功！")
                 return redirect('terminal_list')
+                
             else:
                 form.add_error(None, result_or_error)
     else:

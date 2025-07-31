@@ -84,7 +84,8 @@ class BaseStationInfoForm(forms.ModelForm):
         widgets = {
             'bts_id': forms.TextInput(attrs={'class': 'form-control'}),
             'bts_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'frequency_band': forms.TextInput(attrs={'class': 'form-control'}),
+            # “频段”字段已删除
+            # 'frequency_band': forms.TextInput(attrs={'class': 'form-control'}),
             'coverage_distance': forms.NumberInput(attrs={'class': 'form-control'}),
             'region_code': forms.TextInput(attrs={'class': 'form-control'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'step': 'any'}),

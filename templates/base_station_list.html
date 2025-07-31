@@ -16,7 +16,6 @@
             <tr>
                 <th>基站ID</th>
                 <th>基站名称</th>
-                <th>频段</th>
                 <th>覆盖距离(km)</th>
                 <th>地区号</th>
                 <th>经度</th>
@@ -29,7 +28,6 @@
             <tr>
                 <td>{{ station.bts_id }}</td>
                 <td>{{ station.bts_name }}</td>
-                <td>{{ station.frequency_band|default:"--" }}</td>
                 <td>{{ station.coverage_distance|default:"--" }}</td>
                 <td>{{ station.region_code|default:"--" }}</td>
                 <td>{{ station.longitude|default:"--" }}</td>

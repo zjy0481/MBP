@@ -104,12 +104,13 @@ class BaseStationInfo(models.Model):
         unique=True,  # 基站名称这里也设为唯一的
         verbose_name="基站名称"
     )
-    frequency_band = models.CharField(
-        max_length=50,
-        verbose_name="频段",
-        blank=True,
-        null=True
-    )
+    # “频段”字段已删除
+    # frequency_band = models.CharField(
+    #     max_length=50,
+    #     verbose_name="频段",
+    #     blank=True,
+    #     null=True
+    # )
     coverage_distance = models.FloatField(
         verbose_name="覆盖距离(公里)",
         help_text="单位：公里", 

@@ -178,8 +178,15 @@ class TerminalReport(models.Model):
     bts_name = models.CharField(max_length=100, verbose_name="基站名", blank=True, null=True)
     bts_long = models.FloatField(verbose_name="基站经度", blank=True, null=True)
     bts_lat = models.FloatField(verbose_name="基站纬度", blank=True, null=True)
-    bts_freq = models.CharField(max_length=50, verbose_name="基站频段", blank=True, null=True)
+    # 删除基站频段字段
+    # bts_freq = models.CharField(max_length=50, verbose_name="基站频段", blank=True, null=True)
+    bts_number = models.CharField(max_length=50, verbose_name="基站编号", blank=True, null=True)
+    bts_group_number = models.CharField(max_length=50, verbose_name="基站分区号", blank=True, null=True)
     bts_r = models.FloatField(verbose_name="基站覆盖半径(公里)", blank=True, null=True)
+
+    # -- DGPS 相关信息 --
+    dgps_err = models.CharField(max_length=50, verbose_name="DGPS差分状态", blank=True, null=True)
+    dgps_start = models.CharField(max_length=50, verbose_name="DGPS启动状态", blank=True, null=True)
 
     # -- 通信质量信息 --
     upstream_rate = models.FloatField(verbose_name="上行速率(Mbps)", blank=True, null=True)

@@ -11,9 +11,12 @@ django.setup()
 
 from utils import gl_logger
 from acu.EventManager import EventManager, Event
-from threading import Thread
-from time import sleep
+# from threading import Thread
+import threading
+import uuid
+from time import sleep, time
 from json import loads, dumps, JSONDecodeError
+from queue import Queue, Empty
 import socket
 import time
 import signal
@@ -80,7 +83,7 @@ class NM_Service():
 
         # UDP 的消息循环，负责监听UDP消息，接收后打包成事件发出
         self.__udp_loop_active = False
-        self.__udp_loop_thread = Thread(target=self.__udp_loop)
+        self.__udp_loop_thread = threading.Thread(target=self.__udp_loop)
         # self.__udp_loop_thread.setDaemon(True)
 
         # 通用事务管理器，主工作线程，收发数据和数据处理
@@ -89,8 +92,12 @@ class NM_Service():
         self.__event_manage.addEventListener(Event.RECEIVE_NM_DATA, self.__handle_nm_data)
         self.__event_manage.addEventListener(Event.SEND_NM_DATA, self.__send_to_nm)
 
-        # 用于上报的数据字典
-        self.__update_message = {}
+        # # 用于上报的数据字典
+        # self.__update_message = {}
+
+        # # 用于下发请求的请求池
+        # self.__pending_requests = {}            # 采用字典作为请求池，键为请求ID
+        # self.__pending_lock = threading.Lock()  # 用于保护对字典的访问
 
     def __del__(self):
         pass
@@ -210,7 +217,19 @@ class NM_Service():
             msg_dict = loads(data_str)
             gl_logger.info(f"收到来自 [{peer_ip}:{peer_port}], 消息为： {msg_dict}")
 
-            # 检查操作类型，仅处理 'report' 类型的消息
+            # 检查收到的是否是一个响应
+            response_to_id = msg_dict.get('request_id') 
+            if response_to_id:
+                # 如果这是一个响应，我们不直接处理它，而是把它封装成一个新的事件。
+                # 事件的类型就是请求的ID，这样之前注册的临时监听器就能收到它。
+                response_event = Event(type_=response_to_id)
+                response_event.dict['response_data'] = msg_dict
+                # 将这个响应事件发送给 EventManager
+                self.__event_manage.sendEvent(response_event)
+                # 响应已被分发，此处的常规处理流程结束
+                return
+            
+            # 检查操作类型，处理 'report' 类型的消息
             op = msg_dict.get('op')
             op_sub = msg_dict.get('op_sub')
 
@@ -267,6 +286,51 @@ class NM_Service():
         ev.dict={'peer_ip': peer_ip, 'peer_port': peer_port, 'msg': msg}
         # 加入事件循环，分发事件
         self.__event_manage.sendEvent(ev)
+
+    #
+    # 发送一个请求并阻塞等待其响应。
+    # peer_ip (str): 目标IP，peer_port (int): 目标端口，request_data (dict): 请求的数据字典，服务会自动添加唯一ID，timeout (float): 等待响应的超时时间（秒）
+    # 输出：dict or None: 成功则返回响应的数据字典，超时则返回 None。
+    #
+    def send_request_and_wait(self, peer_ip: str, peer_port: int, request_data: dict, timeout=10.0):
+        request_id = str(uuid.uuid4())
+        request_data['request_id'] = request_id  # 请求和响应都使用 'request_id' 字段
+
+        # 创建一个临时的队列，用于在线程间同步响应结果
+        response_queue = Queue()
+
+        # 定义一个一次性、临时的事件处理函数 (Handler)
+        def _on_response_received(event: Event):
+            # 从事件中获取响应字典
+            response_dict = event.dict.get('response_data') 
+            # 将响应数据放入队列，从而唤醒等待的线程
+            response_queue.put(response_dict)
+            # 处理完后，立即移除这个临时的监听器，防止内存泄漏
+            self.__event_manage.removeEventListener(request_id, _on_response_received)
+
+        # 动态地为这个唯一的 request_id 注册事件监听器
+        # 我们把 request_id 本身当作一个临时的事件类型 (event.type_)
+        self.__event_manage.addEventListener(request_id, _on_response_received)
+
+        try:
+            # 正常发送请求数据
+            self.send_to_nm(peer_ip, peer_port, dumps(request_data))
+            gl_logger.info(f"已发送请求 (ID: {request_id}) 到 {peer_ip}:{peer_port}")
+
+            # 阻塞等待，从队列中获取结果
+            try:
+                # .get() 方法会阻塞，直到队列中有数据或超时
+                response = response_queue.get(block=True, timeout=timeout)
+                gl_logger.info(f"已收到请求 (ID: {request_id}) 的响应。")
+                return response
+            except Empty:
+                gl_logger.warning(f"等待请求 (ID: {request_id}) 的响应超时。")
+                return None
+
+        finally:
+            # 无论成功、失败还是超时，都确保移除监听器
+            self.__event_manage.removeEventListener(request_id, _on_response_received)
+
 
 # 该main函数仅用于测试
 if __name__ == '__main__':

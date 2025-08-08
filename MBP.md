@@ -95,14 +95,41 @@ mbp-project/
 
 用于记录端站设备上报的各类状态和参数，是系统的核心日志数据。
 
-| 字段名        | 字段类型        | 说明                                 |
-| :------------ | :-------------- | :----------------------------------- |
-| `id`          | `BigAutoField`  | **自增主键**。                       |
-| `type`        | `IntegerField`  | 设备类型号。                         |
-| `sn`          | `CharField(50)` | 设备序列号，**索引**。               |
-| `report_date` | `DateField`     | 上报日期，**索引**。                 |
-| `report_time` | `TimeField`     | 上报时间。                           |
-| ...           | ...             | (其他业务字段，如经纬度、通信质量等) |
+| 字段名 | 字段类型 | 说明 |
+| :--- | :--- | :--- |
+| `id` | `BigAutoField` | **自增主键**。由 Django 自动创建，用于唯一标识每一条上报记录。 |
+| `type` | `IntegerField` | 设备类型号。与 sn, date, time 构成复合唯一约束。 |
+| `sn` | `CharField(50)` | 设备序列号。已创建**数据库索引**以优化查询速度。 |
+| `report_date` | `DateField` | 上报日期。已创建**数据库索引**以优化查询速度。 |
+| `report_time` | `TimeField` | 上报时间。 |
+| `op` | `IntegerField` | 操作类型。 |
+| `op_sub` | `IntegerField` | 操作子类。 |
+| `long` | `FloatField` | 端站当前的经度 (可为空)。 |
+| `lat` | `FloatField` | 端站当前的纬度 (可为空)。 |
+| `theory_yaw`| `FloatField` | 理论方位角 (可为空)。 |
+| `yaw` | `FloatField` | 当前方位角 (可为空)。 |
+| `pitch` | `FloatField` | 当前俯仰角 (可为空)。 |
+| `roll` | `FloatField` | 当前横滚角 (可为空)。 |
+| `yao_limit_state` | `CharField(50)` | 方位限位状态 (可为空)。 |
+| `temp` | `FloatField` | 温度，单位 °C (可为空)。 |
+| `humi` | `FloatField` | 湿度，单位 % (可为空)。 |
+| `bts_name` | `CharField(100)`| 所连接的基站名 (可为空)。 |
+| `bts_long` | `FloatField` | 所连接的基站经度 (可为空)。 |
+| `bts_lat` | `FloatField` | 所连接的基站纬度 (可为空)。 |
+| `bts_r` | `FloatField` | 所连接的基站覆盖半径，单位公里 (可为空)。 |
+| `bts_number` | `CharField(50)` | **(新增)** 基站编号 (可为空)。 |
+| `bts_group_number`| `CharField(50)` | **(新增)** 基站分区号 (可为空)。 |
+| `dgps_err` | `CharField(50)` | **(新增)** DGPS差分状态 (可为空)。 |
+| `dgps_start` | `CharField(50)` | **(新增)** DGPS启动状态 (可为空)。 |
+| `upstream_rate`| `FloatField` | 上行速率，单位 Mbps (可为空)。 |
+| `downstream_rate`| `FloatField` | 下行速率，单位 Mbps (可为空)。 |
+| `standard` | `CharField(50)` | 通信制式 (可为空)。 |
+| `plmn` | `CharField(20)` | 运营商PLMN码 (可为空)。 |
+| `cellid` | `CharField(20)` | 服务小区CellID (可为空)。 |
+| `pci` | `IntegerField` | 服务小区PCI (可为空)。 |
+| `rsrp` | `FloatField` | RSRP (信号接收功率) (可为空)。 |
+| `sinr` | `FloatField` | SINR (信噪比) (可为空)。 |
+| `rssi` | `FloatField` | RSSI (信号强度指示) (可为空)。 |
 
 **复合唯一约束**: (`type`, `sn`, `report_date`, `report_time`)。
 

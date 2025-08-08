@@ -154,14 +154,14 @@ class TerminalReport(models.Model):
     """
     
     # -- 复合唯一约束字段 --
-    type = models.IntegerField(verbose_name="设备类型号")
+    type = models.CharField(max_length=100, verbose_name="设备类型名")
     sn = models.CharField(max_length=50, verbose_name="设备序列号", db_index=True) # 经常用于查询，添加索引
     report_date = models.DateField(verbose_name="上报日期", db_index=True) # 名字用 report_date 避免与 Python 关键字冲突
     report_time = models.TimeField(verbose_name="上报时间") # 名字用 report_time
 
     # -- 操作信息 --
-    op = models.IntegerField(verbose_name="操作类型")
-    op_sub = models.IntegerField(verbose_name="操作子类")
+    op = models.CharField(max_length=20, verbose_name="操作类型")
+    op_sub = models.CharField(max_length=20, verbose_name="操作子类")
 
     # -- 端站状态信息 --
     long = models.FloatField(verbose_name="端站经度", blank=True, null=True)
@@ -170,7 +170,7 @@ class TerminalReport(models.Model):
     yaw = models.FloatField(verbose_name="当前方位角", blank=True, null=True)
     pitch = models.FloatField(verbose_name="当前俯仰角", blank=True, null=True)
     roll = models.FloatField(verbose_name="当前横滚角", blank=True, null=True)
-    yao_limit_state = models.CharField(max_length=50, verbose_name="方位限位", blank=True, null=True)
+    yao_limit_state = models.FloatField(verbose_name="方位限位", blank=True, null=True)
     temp = models.FloatField(verbose_name="温度(°C)", blank=True, null=True)
     humi = models.FloatField(verbose_name="湿度(%)", blank=True, null=True)
 
@@ -178,15 +178,9 @@ class TerminalReport(models.Model):
     bts_name = models.CharField(max_length=100, verbose_name="基站名", blank=True, null=True)
     bts_long = models.FloatField(verbose_name="基站经度", blank=True, null=True)
     bts_lat = models.FloatField(verbose_name="基站纬度", blank=True, null=True)
-    # 删除基站频段字段
-    # bts_freq = models.CharField(max_length=50, verbose_name="基站频段", blank=True, null=True)
-    bts_number = models.CharField(max_length=50, verbose_name="基站编号", blank=True, null=True)
-    bts_group_number = models.CharField(max_length=50, verbose_name="基站分区号", blank=True, null=True)
+    bts_number = models.IntegerField(verbose_name="基站编号", blank=True, null=True)
+    bts_group_number = models.IntegerField(verbose_name="基站分区号", blank=True, null=True)
     bts_r = models.FloatField(verbose_name="基站覆盖半径(公里)", blank=True, null=True)
-
-    # -- DGPS 相关信息 --
-    dgps_err = models.CharField(max_length=50, verbose_name="DGPS差分状态", blank=True, null=True)
-    dgps_start = models.CharField(max_length=50, verbose_name="DGPS启动状态", blank=True, null=True)
 
     # -- 通信质量信息 --
     upstream_rate = models.FloatField(verbose_name="上行速率(Mbps)", blank=True, null=True)

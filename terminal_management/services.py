@@ -269,3 +269,19 @@ def delete_report_by_id(report_id):
         return (False, f"删除失败：ID为 '{report_id}' 的上报记录不存在。")
     except Exception as e:
         return (False, f"删除上报记录时发生未知错误: {e}")
+
+# =============================================================================
+# 端站数据与控制页面 (Antenna) 操作函数
+# =============================================================================
+
+def get_latest_report_by_sn(sn):
+    """根据 SN 码查询最新的一条上报记录。"""
+    # 仅查询，无需使用atomic确保原子性
+    try:
+        report = TerminalReport.objects.filter(sn=sn).order_by('-report_date', '-report_time').first()
+        if report:
+            return (True, report)
+        else:
+            return (True, None) # 即使没有记录，操作本身也是成功的，返回None
+    except Exception as e:
+        return (False, f"按SN码查询最新上报记录时发生错误: {e}")

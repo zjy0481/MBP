@@ -29,61 +29,61 @@ class ExtendHandler(logging.Handler, object):
     def emit(self, record: logging.LogRecord) -> None:
         """
         emit函数为自定义handler必须重写的函数，这里根据需要增加一些处理
-        :param record:
-        :return:
         """
-        try:
-            message = self.format(record)
-        except Exception:
-            self.handleError(record)
+        # 在发送前检查队列是否存在
+        if LoggerManage.is_web_queue_bound():
+            try:
+                message = self.format(record)
+            except Exception:
+                self.handleError(record)
 
-        if record.levelname == 'DEBUG':
-            LoggerManage.send_to_web(
-                dict(
-                    cmd=0xF1,  # 日志消息命令字
-                    level=0,  # 调试信息
-                    time=time.strftime('%Y-%m-%d %H:%M:%S'),
-                    msg=message
+            if record.levelname == 'DEBUG':
+                LoggerManage.send_to_web(
+                    dict(
+                        cmd=0xF1,  # 日志消息命令字
+                        level=0,  # 调试信息
+                        time=time.strftime('%Y-%m-%d %H:%M:%S'),
+                        msg=message
+                    )
                 )
-            )
-        elif record.levelname == 'INFO':
-            LoggerManage.send_to_web(
-                dict(
-                    cmd=0xF1,  # 日志消息命令字
-                    level=1,  # 提示信息
-                    time=time.strftime('%Y-%m-%d %H:%M:%S'),
-                    msg=message
+            elif record.levelname == 'INFO':
+                LoggerManage.send_to_web(
+                    dict(
+                        cmd=0xF1,  # 日志消息命令字
+                        level=1,  # 提示信息
+                        time=time.strftime('%Y-%m-%d %H:%M:%S'),
+                        msg=message
+                    )
                 )
-            )
-        elif record.levelname == 'WARNING':
-            LoggerManage.send_to_web(
-                dict(
-                    cmd=0xF1,  # 日志消息命令字
-                    level=2,  # 警告信息
-                    time=time.strftime('%Y-%m-%d %H:%M:%S'),
-                    msg=message
+            elif record.levelname == 'WARNING':
+                LoggerManage.send_to_web(
+                    dict(
+                        cmd=0xF1,  # 日志消息命令字
+                        level=2,  # 警告信息
+                        time=time.strftime('%Y-%m-%d %H:%M:%S'),
+                        msg=message
+                    )
                 )
-            )
-        elif record.levelname == 'ERROR':
-            LoggerManage.send_to_web(
-                dict(
-                    cmd=0xF1,  # 日志消息命令字
-                    level=3,  # 错误信息
-                    time=time.strftime('%Y-%m-%d %H:%M:%S'),
-                    msg=message
+            elif record.levelname == 'ERROR':
+                LoggerManage.send_to_web(
+                    dict(
+                        cmd=0xF1,  # 日志消息命令字
+                        level=3,  # 错误信息
+                        time=time.strftime('%Y-%m-%d %H:%M:%S'),
+                        msg=message
+                    )
                 )
-            )
-        elif record.levelname == 'CRITICAL':
-            LoggerManage.send_to_web(
-                dict(
-                    cmd=0xF1,  # 日志消息命令字
-                    level=4,  # 严重错误
-                    time=time.strftime('%Y-%m-%d %H:%M:%S'),
-                    msg=message
+            elif record.levelname == 'CRITICAL':
+                LoggerManage.send_to_web(
+                    dict(
+                        cmd=0xF1,  # 日志消息命令字
+                        level=4,  # 严重错误
+                        time=time.strftime('%Y-%m-%d %H:%M:%S'),
+                        msg=message
+                    )
                 )
-            )
-        else:
-            pass
+            else:
+                pass
 
 
 class LoggerManage(object):
@@ -162,80 +162,10 @@ class LoggerManage(object):
     def get_logger(self):
         return self.logger
 
-    # def web_debug(self, message):
-    #     """
-    #     :param message: debug信息
-    #     :return:
-    #     """
-    #     # self.logger.debug(message)
-    #     self.send_to_web(
-    #         dict(
-    #             cmd=0xF1,  # 日志消息命令字
-    #             level=0,  # 调试信息
-    #             time=time.strftime('%Y-%m-%d %H:%M:%S'),
-    #             msg=message
-    #         )
-    #     )
-    #
-    # def web_info(self, message):
-    #     """
-    #     :param message: info信息
-    #     :return:
-    #     """
-    #     # self.logger.info(message)
-    #     self.send_to_web(
-    #         dict(
-    #             cmd=0xF1,  # 日志消息命令字
-    #             level=1,  # 提示信息
-    #             time=time.strftime('%Y-%m-%d %H:%M:%S'),
-    #             msg=message
-    #         )
-    #     )
-    #
-    # def web_warning(self, message):
-    #     """
-    #     :param warn: warn 信息
-    #     :return:
-    #     """
-    #     # self.logger.warning(message)
-    #     self.send_to_web(
-    #         dict(
-    #             cmd=0xF1,  # 日志消息命令字
-    #             level=2,  # 警告信息
-    #             time=time.strftime('%Y-%m-%d %H:%M:%S'),
-    #             msg=message
-    #         )
-    #     )
-    #
-    # def web_error(self, message):
-    #     """
-    #     :param message: error 信息
-    #     :return:
-    #     """
-    #     # self.logger.error(message)
-    #     self.send_to_web(
-    #         dict(
-    #             cmd=0xF1,  # 日志消息命令字
-    #             level=3,  # 错误信息
-    #             time=time.strftime('%Y-%m-%d %H:%M:%S'),
-    #             msg=message
-    #         )
-    #     )
-    #
-    # def web_critical(self, message):
-    #     """
-    #     :param message: critical 信息
-    #     :return:
-    #     """
-    #     # self.logger.critical(message)
-    #     self.send_to_web(
-    #         dict(
-    #             cmd=0xF1,  # 日志消息命令字
-    #             level=4,  # 严重错误
-    #             time=time.strftime('%Y-%m-%d %H:%M:%S'),
-    #             msg=message
-    #         )
-    #     )
+    #检查队列绑定状态
+    @classmethod
+    def is_web_queue_bound(cls):
+        return hasattr(cls, '_LoggerManage__to_web_messages') and cls.__to_web_messages is not None
 
     # 绑定发给web的消息队列
     @classmethod
@@ -253,7 +183,7 @@ class LoggerManage(object):
         else:
             print("请先绑定Web消息队列。Web消息发送失败：" + str(msg))  # 这里直接打印（不发给Web），否则会递归调用
 
-
+# 以下是测试代码
 if __name__ == '__main__':
     logger = LoggerManage(app_name='logTest').get_logger()
     LoggerManage.bind_web_message_queue(Queue())

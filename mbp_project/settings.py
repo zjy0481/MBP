@@ -149,3 +149,8 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# Django 项目级的静态文件
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]

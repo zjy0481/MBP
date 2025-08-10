@@ -80,13 +80,13 @@ class EventManager:
     def removeEventListener(self, type_, handler):
         """移除监听器的处理函数"""
         try:
-            handlerList = self.handlers[type_]
+            handlerList = self.__handlers[type_]
             # 如果该函数存在于列表中，则移除
             if handler in handlerList:
                 handlerList.remove(handler)
             # 如果函数列表为空，则从引擎中移除该事件类型
             if not handlerList:
-                del self.handlers[type_]
+                del self.__handlers[type_]
         except KeyError:
             pass
 

@@ -1,13 +1,18 @@
+# terminal_management/management/commands/start_nm_service.py
+
 from django.core.management.base import BaseCommand
-from acu.NM_Service import NM_Service
+# from acu.NM_Service import NM_Service
 import time
 
 class Command(BaseCommand):
     help = '启动UDP NM_Service来监听端站上报'
 
     def handle(self, *args, **options):
+        from acu.NM_Service import NM_Service
+
         self.stdout.write(self.style.SUCCESS('正在启动 NM_Service...'))
 
+        # Django环境此时已由BaseCommand完全加载
         service = NM_Service()
         service.start()
 

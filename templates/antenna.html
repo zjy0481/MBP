@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}端站数据与控制 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<style>
+    .statusLight{width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
+                                    box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;}
+</style>
+
+<h2>端站数据与控制</h2>
+<hr>
+
+<fieldset class="mb-3">
+    <legend>端站选择</legend>
+    <div class="row">
+        <div class="col-md-6">
+            <label for="terminal_selector" class="form-label">请从下方列表选择一个端站以查看或控制：</label>
+            <select id="terminal_selector" class="form-select">
+                <option value="" selected disabled>--- 请选择一个端站 ---</option>
+                {% for terminal in terminals %}
+                    <option value="{{ terminal.sn }}" data-ip="{{ terminal.ip_address }}" data-port="{{ terminal.port_number }}">{{ terminal.ship.ship_name }} - {{ terminal.sn }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+            <button id="confirm_terminal" class="btn btn-primary">确认选择</button>
+        </div>
+    </div>
+</fieldset>
+
+<div id="main_content" style="display: none;">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <fieldset id="antenna_status">
+                <legend>系统状态：</legend>
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>无状态</th>
+                            <th>初始化</th>
+                            <th>预搜索</th>
+                            <th>跟踪</th>
+                            <th>故障</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><li class="statusLight" id="light_none"></li></td>
+                            <td><li class="statusLight" id="light_init"></li></td>
+                            <td><li class="statusLight" id="light_presearch"></li></td>
+                            <td><li class="statusLight" id="light_track"></li></td>
+                            <td><li class="statusLight" id="light_fault"></li></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        </div>
+        <div class="col-md-4">
+            <fieldset id="link_status">
+                <legend>无线网络状态：</legend>
+                <table class="table table-bordered text-center">
+                     <thead>
+                        <tr>
+                            <th>断联</th>
+                            <th>拨号成功</th>
+                            <th>驻留小区</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><li class="statusLight" id="dtu_unlink"></li></td>
+                            <td><li class="statusLight" id="dtu_state_dial"></li></td>
+                            <td><li class="statusLight" id="dtu_state_normal"></li></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+             <fieldset class="mb-3">
+                <legend>MBP状态参数：</legend>
+                <div class="row">
+                    <div class="col-md-6"><p>基站名称：<input id="bts_name" type="text" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>基站编号：<input id="bts_no" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>基站经度：<input id="bts_longitude" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>基站纬度：<input id="bts_latitude" type="number" class="form-control" readonly></p></div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6"><p>当前经度：<input id="longitude" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>当前纬度：<input id="latitude" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>理论方位角：<input id="theory_yaw" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>当前方位角：<input id="yaw" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>理论俯仰角：<input id="theory_pitch" type="number" class="form-control" readonly disabled></p></div>
+                    <div class="col-md-6"><p>当前俯仰角：<input id="pitch" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>方位限位：<input id="yaw_limit" type="text" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>当前横滚角：<input id="roll" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>温度：<input id="temperature" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>湿度：<input id="humidity" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>错帧数：<input id="dgps_err" type="number" class="form-control" readonly></p></div>
+                    <div class="col-md-6"><p>启动时间：<input id="dgps_start" type="text" class="form-control" readonly></p></div>
+                </div>
+            </fieldset>
+        </div>
+        <div class="col-md-4">
+            <fieldset class="mb-3">
+                <legend>网络速率:</legend>
+                <div id="link_speed" class="text-center"><h4>上行：0bps&nbsp;&nbsp;下行：0bps</h4></div>
+            </fieldset>
+            <fieldset>
+                <legend>RSRP:</legend>
+                <div class="d-flex justify-content-around align-items-center">
+                    <div id="rsrp_value" class="text-center"><h1>-? dBm</h1></div>
+                    <meter id="rsrp_meter" value="0" min="0" low="30" high="70" max="100" optimum="70" style="height: 50px; width: 100px; transform: rotate(270deg);"></meter>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <fieldset>
+                <legend>驻留小区网络质量：</legend>
+                <p>运营商：<input id="dtu_plmn" class="form-control" readonly></p>
+                <p>制式：<input id="dtu_standard" class="form-control" readonly></p>
+                <p>小区ID：<input id="dtu_cellid" class="form-control" readonly></p>
+                <p>PCI：<input id="dtu_pci" class="form-control" readonly></p>
+                <p>信号接收功率：<input id="dtu_rsrp" class="form-control" readonly></p>
+                <p>信号强度指示：<input id="dtu_rssi" class="form-control" readonly></p>
+                <p>信噪比：<input id="dtu_sinr" class="form-control" readonly></p>
+            </fieldset>
+        </div>
+        <div class="col-md-8">
+            <fieldset class="mb-3">
+                <legend>工作模式：</legend>
+                <div class="input-group">
+                    <select id="work_mode" class="form-select">
+                        <option value="0">自动模式</option>
+                        <option value="1">手动模式</option>
+                    </select>
+                    <button id="query_work_mode" class="btn btn-info">查询</button>
+                    <button id="set_work_mode" class="btn btn-success">设置</button>
+                </div>
+                 <div id="work_mode_status" class="form-text">暂无数据</div>
+            </fieldset>
+            <fieldset>
+                <legend>手动控制：</legend>
+                <div class="form-text mb-2">要启用该功能，请先确保工作模式为手动。</div>
+                <div class="d-flex justify-content-center align-items-center">
+                    <div class="me-3">
+                        <select id="turn_mode" class="form-select">
+                            <option value="1" selected>增量模式</option>
+                            <option value="0" disabled>绝对值模式</option>
+                        </select>
+                    </div>
+                    <div class="text-center">
+                        <button id="turn_up" class="btn btn-secondary" title="俯仰向上">↑</button><br>
+                        <button id="turn_left" class="btn btn-secondary" title="方位向左">←</button>
+                        <input id="turn_angle" type="number" value="1" min="0.1" max="180" step="0.1" style="width: 70px; text-align: center;">
+                        <button id="turn_right" class="btn btn-secondary" title="方位向右">→</button><br>
+                        <button id="turn_down" class="btn btn-secondary" title="俯仰向下">↓</button>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+
+    <fieldset>
+        <legend>设备状态:</legend>
+        <div class="d-flex justify-content-between align-items-center">
+             <table class="table table-bordered text-center">
+                 <thead>
+                    <tr>
+                        <th>惯导</th>
+                        <th>DGPS</th>
+                        <th>存储</th>
+                        <th>方位电机</th>
+                        <th>俯仰电机</th>
+                        <th>方位限位</th>
+                        <th>俯仰限位</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><li class="statusLight" id="IMUState"></li></td>
+                        <td><li class="statusLight" id="DGPSState"></li></td>
+                        <td><li class="statusLight" id="storageState"></li></td>
+                        <td><li class="statusLight" id="yawMotoState"></li></td>
+                        <td><li class="statusLight" id="pitchMotoState"></li></td>
+                        <td><li class="statusLight" id="yawLimitState"></li></td>
+                        <td><li class="statusLight" id="pitchLimitState"></li></td>
+                    </tr>
+                </tbody>
+             </table>
+            <button id="query_devices_status" class="btn btn-info ms-3">查询</button>
+        </div>
+    </fieldset>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'js/antenna.js' %}"></script>
+{% endblock %}

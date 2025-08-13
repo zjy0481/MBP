@@ -20,14 +20,17 @@ from time import sleep, time
 import json
 from queue import Queue, Empty
 import socket
-import time
-import signal
-import sys
+# import time
+# import signal
+# import sys
 import redis
 from django.conf import settings
 
 from django.db import models
 from terminal_management.models import TerminalReport   # 引入django生成的端站上报表
+
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 # 定义映射字典（消息字段：数据库字段）
 JSON_TO_MODEL_MAP = {
@@ -100,7 +103,7 @@ class NM_Service():
         
         # 用于存储请求和响应的队列
         self.__pending_requests = {}
-        self.__response_lock = threading.Lock()
+        self.__lock = threading.Lock()
 
     #
     # 启动ACU服务
@@ -188,14 +191,10 @@ class NM_Service():
                     self.route_message(data, addr)
             except BlockingIOError:
                 # 没有数据时继续循环
-                # time.sleep(0.1)
-                pass
+                sleep(0.01)
             except Exception as e:
                 if self.__udp_loop_active:
                     gl_logger.error(f"UDP接收错误: {e}")
-            finally:
-                # 释放cpu
-                time.sleep(0.01)
 
     #
     # radis线程的核心循环，守候监听Django发来的消息，并调用处理函数
@@ -208,7 +207,7 @@ class NM_Service():
                 self.__redis_pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             except Exception as e:
                 gl_logger.error(f"Redis 监听线程出错: {e}")
-                time.sleep(5)
+                sleep(5)
 
     #
     # 判断收到的消息是上报还是响应，并分发给不同处理器
@@ -233,7 +232,7 @@ class NM_Service():
         with self.__lock:
             if request_id and request_id in self.__pending_requests:
                 # 如果有 request_id 且在等待列表中，则为响应
-                self.__handle_request_response(decoded_data, request_id)
+                self.__handle_control_response(decoded_data, request_id)
             else:
                 # 否则为上报
                 self.__handle_report_data(decoded_data, addr)
@@ -278,92 +277,26 @@ class NM_Service():
             # 捕获所有可能的异常，例如JSON解析错误、数据库写入错误等
             gl_logger.error(f"收到消息时发生报错 [{peer_ip}:{peer_port}]: {e}")
 
-    # #
-    # # 事件循环的分发响应处理函数。
-    # # 输入：事件event
-    # # 输出：无
-    # #
-    # def __send_to_nm(self, event):
-    #     data = event.dict['msg'].encode('utf-8')    # 编码
-    #     peer_ip = event.dict['peer_ip']
-    #     peer_port = event.dict['peer_port']
-    #     try:
-    #         # udp 发送时必须是二进制串流，所以统一在此方法encode
-    #         # self.__udp_socket.sendto(event.msg.encode('utf-8'), (event.peer_ip, event.peer_port)) # 如果输入的是文字，这里要编码成二进制串
-    #         self.__udp_socket.sendto(data, (peer_ip, peer_port))
-    #         # gl_logger.info(f"发送到 ({peer_ip}:{peer_port}) 消息：{data}")
-    #     except Exception as err:
-    #         gl_logger.error(f"发送到端站({peer_ip}:{peer_port}) 异常：{err} 消息：{data}")
-
-    # #
-    # # 发送数据到指定对端
-    # # 输入：事件event
-    # # 输出：无
-    # #
-    # def send_to_nm(self, peer_ip, peer_port, msg:str):
-    #     # 构建发送给NM的事件
-    #     ev = Event(Event.SEND_NM_DATA)
-    #     ev.dict={'peer_ip': peer_ip, 'peer_port': peer_port, 'msg': msg}
-    #     # 加入事件循环，分发事件
-    #     self.__event_manage.sendEvent(ev)
-
-    # #
-    # # 发送一个请求并阻塞等待其响应。
-    # # peer_ip (str): 目标IP，peer_port (int): 目标端口，request_data (dict): 请求的数据字典，服务会自动添加唯一ID，timeout (float): 等待响应的超时时间（秒）
-    # # 输出：dict or None: 成功则返回响应的数据字典，超时则返回 None。
-    # #
-    # def send_request_and_wait(self, peer_ip: str, peer_port: int, request_data: dict, timeout=10.0):
-    #     request_id = str(uuid.uuid4())
-    #     request_data['request_id'] = request_id  # 请求和响应都使用 'request_id' 字段
-
-    #     # 创建一个临时的队列，用于在线程间同步响应结果
-    #     response_queue = Queue()
-
-    #     # 定义一个一次性、临时的事件处理函数 (Handler)
-    #     def _on_response_received(event: Event):
-    #         # 从事件中获取响应字典
-    #         response_dict = event.dict.get('response_data') 
-    #         # 将响应数据放入队列，从而唤醒等待的线程
-    #         response_queue.put(response_dict)
-    #         # 处理完后，立即移除这个临时的监听器，防止内存泄漏
-    #         self.__event_manage.removeEventListener(request_id, _on_response_received)
-
-    #     # 动态地为这个唯一的 request_id 注册事件监听器
-    #     # 我们把 request_id 本身当作一个临时的事件类型 (event.type_)
-    #     self.__event_manage.addEventListener(request_id, _on_response_received)
-
-    #     try:
-    #         # 正常发送请求数据
-    #         self.send_to_nm(peer_ip, peer_port, json.dumps(request_data))
-    #         gl_logger.info(f"已发送请求 (ID: {request_id}) 到 {peer_ip}:{peer_port}")
-
-    #         # 阻塞等待，从队列中获取结果
-    #         try:
-    #             # .get() 方法会阻塞，直到队列中有数据或超时
-    #             response = response_queue.get(block=True, timeout=timeout)
-    #             gl_logger.info(f"已收到请求 (ID: {request_id}) 的响应。")
-    #             return response
-    #         except Empty:
-    #             gl_logger.warning(f"等待请求 (ID: {request_id}) 的响应超时。")
-    #             return None
-
-    #     finally:
-    #         # 无论成功、失败还是超时，都确保移除监听器
-    #         self.__event_manage.removeEventListener(request_id, _on_response_received)
-
-    def __handle_request_response(self, response_data, request_id):
-        """处理精确匹配到的控制指令响应"""
+    def __handle_control_response(self, response_data, request_id):
+        """处理精确匹配到的控制指令响应，并通过 Channel Layer 回复"""
         with self.__lock:
             request_info = self.__pending_requests.pop(request_id, None)
         
         if request_info:
-            gl_logger.info(f"匹配到请求 {request_id} 的响应，准备转发至频道: {request_info['reply_channel']}")
-            # 将响应通过Redis发回到指定的回复频道
-            self.__redis_conn.publish(request_info['reply_channel'], json.dumps(response_data))
+            reply_channel_group = request_info['reply_channel']
+            gl_logger.info(f"匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
+            
+            # --- 核心修复：使用 Channel Layer 发送回复 ---
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                reply_channel_group,
+                {
+                    "type": "udp.reply",  # 这会调用 consumer 中的 udp_reply 方法
+                    "message": json.dumps(response_data)
+                }
+            )
         else:
-            # 这种情况很少见，可能意味着响应延迟太高，consumer端已经超时放弃了
             gl_logger.warning(f"收到一个已超时的请求 {request_id} 的响应，予以忽略。")
-
 
     def __handle_redis_command(self, message):
         """处理从Redis收到的控制指令，发送UDP并等待响应"""
@@ -374,8 +307,10 @@ class NM_Service():
             reply_channel = command_data.get('reply_channel')
             payload = command_data.get('payload')
 
-            request_id = str(uuid.uuid4())
-            payload['request_id'] = request_id
+            request_id = payload.get('request_id')
+            if not request_id:
+                gl_logger.error("收到的控制指令缺少 'request_id'，予以忽略。")
+                return
 
             gl_logger.info(f"收到Redis指令, 生成请求, ID: {request_id}, 发往 {ip}:{port}")
             

@@ -60,31 +60,32 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const dataSocket = new WebSocket(
+        window.dataSocket = new WebSocket(
             'ws://' + window.location.host + '/ws/data/'
         );
+
+        // onopen 事件，解决竞态条件
+        window.dataSocket.onopen = function(e) {
+            console.log('WebSocket connection established successfully.');
+            if (typeof onSocketReady === 'function') {
+                onSocketReady();
+            }
+        }
+
+        // 定义一个全局的 onmessage 处理器列表
+        window.webSocketOnMessageHandlers = window.webSocketOnMessageHandlers || [];
     
-        dataSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            const message = data.message;
-            console.log('收到实时数据:', message);
-            // location.reload();
-            
-            // 1. 定义哪些页面是希望自动刷新的“列表页”
+        // --- 默认的列表页刷新处理器 ---
+        const basePageMessageHandler = function(message) {
             const listPages = [
-                '/', // 首页
+                '/', 
                 '/ships/',
                 '/terminals/',
                 '/base-stations/'
             ];
-
-            // 2. 获取当前页面的路径
             const currentPage = window.location.pathname;
-
-            // 3. 判断当前页面是否在我们的“列表页”清单中
             if (listPages.includes(currentPage)) {
-                // 如果是，则执行刷新
-                console.log('当前在列表页，执行刷新...');
+                console.log('当前在列表页，由 base.html 执行刷新...');
                 location.reload();
             } else {
                 // 如果不是（例如在 /terminals/add/ 或 /ships/edit/ 等表单页），
@@ -92,10 +93,25 @@
                 console.log('当前在表单页，不执行刷新，等待服务器跳转...');
             }
         };
+        // 将默认处理器添加到列表中
+        window.webSocketOnMessageHandlers.push(basePageMessageHandler);
+        
+        // --- 主 onmessage 函数 ---
+        // 它会遍历并执行所有注册的处理器
+        dataSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            if (data.message) {
+                window.webSocketOnMessageHandlers.forEach(handler => handler(data.message));
+            }
+        };
     
         dataSocket.onclose = function(e) {
             console.error('WebSocket 连接意外关闭!');
         };
+
     </script>
+
+    {% block script %}{% endblock %}
+
 </body>
 </html>

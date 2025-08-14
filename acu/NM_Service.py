@@ -86,14 +86,8 @@ class NM_Service():
 
         # UDP 的消息循环，负责监听UDP消息，接收后打包成事件发出
         self.__udp_loop_active = False
-        self.__udp_loop_thread = threading.Thread(target=self.__udp_loop)
+        self.__udp_loop_thread = threading.Thread(target=self.__udp_loop, name="UDP_Receiver_Thread")
         # self.__udp_loop_thread.setDaemon(True)
-
-        # 通用事务管理器，主工作线程，收发数据和数据处理
-        # self.__event_manage = EventManager("NM Event Loop")
-        # 注册事件处理回调函数
-        # self.__event_manage.addEventListener(Event.RECEIVE_NM_DATA, self.__handle_nm_data)
-        # self.__event_manage.addEventListener(Event.SEND_NM_DATA, self.__send_to_nm)
 
         # --- Redis 监听部分 ---
         self.__redis_conn = None
@@ -233,13 +227,25 @@ class NM_Service():
 
         request_id = decoded_data.get('request_id')
         
-        with self.__lock:
-            if request_id and request_id in self.__pending_requests:
-                # 如果有 request_id 且在等待列表中，则为响应
-                self.__handle_control_response(decoded_data, request_id)
-            else:
-                # 否则为上报
-                self.__handle_report_data(decoded_data, addr)
+        # 先在锁外面对 request_id 进行判断
+        if request_id:
+            # 仅在需要访问共享资源 __pending_requests 时才加锁
+            with self.__lock:
+                # 再次检查，确保在等待锁的过程中，该请求没有被其他线程处理
+                if request_id in self.__pending_requests:
+                    # 从等待字典中弹出请求信息，这意味着这个响应只会被处理一次
+                    request_info = self.__pending_requests.pop(request_id, None)
+                    # 立即释放锁
+                else:
+                    request_info = None
+            
+            # 在锁已经释放的情况下，安全地调用处理函数
+            if request_info:
+                self.__handle_control_response(decoded_data, request_info)
+                return # 处理完毕，直接返回
+        
+        # 如果不是一个我们正在等待的响应，就作为上报数据处理
+        self.__handle_report_data(decoded_data, addr)
 
     #
     # 处理端站上报，将上报信息存入数据库。
@@ -281,26 +287,20 @@ class NM_Service():
             # 捕获所有可能的异常，例如JSON解析错误、数据库写入错误等
             gl_logger.error(f"收到消息时发生报错 [{peer_ip}:{peer_port}]: {e}")
 
-    def __handle_control_response(self, response_data, request_id):
+    def __handle_control_response(self, response_data, request_info):
         """处理精确匹配到的控制指令响应，并通过 Channel Layer 回复"""
-        with self.__lock:
-            request_info = self.__pending_requests.pop(request_id, None)
+        reply_channel_group = request_info['reply_channel']
+        request_id = response_data.get('request_id')
+        gl_logger.info(f"匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
         
-        if request_info:
-            reply_channel_group = request_info['reply_channel']
-            gl_logger.info(f"匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
-            
-            # --- 核心修复：使用 Channel Layer 发送回复 ---
-            channel_layer = get_channel_layer()
-            async_to_sync(channel_layer.group_send)(
-                reply_channel_group,
-                {
-                    "type": "udp.reply",  # 这会调用 consumer 中的 udp_reply 方法
-                    "message": json.dumps(response_data)
-                }
-            )
-        else:
-            gl_logger.warning(f"收到一个已超时的请求 {request_id} 的响应，予以忽略。")
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            reply_channel_group,
+            {
+                "type": "udp.reply",
+                "message": json.dumps(response_data)
+            }
+        )
 
     def __handle_redis_command(self, message):
         """处理从Redis收到的控制指令，发送UDP并等待响应"""

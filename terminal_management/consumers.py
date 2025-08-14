@@ -90,6 +90,7 @@ class DataConsumer(AsyncWebsocketConsumer):
     async def handle_control_command(self, data):
         """专门处理控制指令"""
         module = data.get('module')
+        sn = data.get('sn')
         gl_logger.info(f"正在处理控制指令，模块: {module}")
 
         # 检查 Redis 连接是否存在
@@ -110,20 +111,50 @@ class DataConsumer(AsyncWebsocketConsumer):
         try:
             await self.channel_layer.group_add(reply_channel_name, self.channel_name)
 
-            # 核心改动：将 request_id 添加到 payload 中
-            payload = data.get('payload', {})
-            payload['request_id'] = request_id
-
-            command_to_send = {
-                "ip": data.get('ip'), "port": int(data.get('port')),
-                "reply_channel": reply_channel_name, "payload": data.get('payload', {})
+            frontend_payload = data.get('payload', {})
+            payload = {
+                "sn": sn,
+                "request_id": request_id  # 将我们的内部ID注入payload
             }
 
-            gl_logger.info(f"正在向 Redis 'udp-command' 频道发布指令: {command_to_send}")
+            # --- 根据通信协议设置 payload 包（NM下发） ---
+            if module == 'query_work_mode':         # 查询工作模式
+                payload['op'] = 'query'
+                payload['op_sub'] = 'work_pattern'
+
+            elif module == 'set_work_mode':         # 设置工作模式
+                payload['op'] = 'antenna_control'
+                payload['op_sub'] = 'work_pattern'
+                payload['pattern'] = frontend_payload.get('pattern')
+
+            elif module == 'query_device_status':   # 查询设备状态
+                payload['op'] = 'query'
+                payload['op_sub'] = 'equipment_status'
+
+            elif module == 'turn_control':          # 手动控制天线旋转
+                payload['op'] = 'antenna_control'
+                payload['op_sub'] = 'rotate'
+                payload['mode'] = frontend_payload.get('mode')
+                payload['axis'] = frontend_payload.get('axis')
+                payload['direct'] = frontend_payload.get('direct')
+                payload['angle'] = frontend_payload.get('angle')
+
+            else:                                   # default
+                gl_logger.error(f"收到了一个未知的控制模块: {module}")
+                raise ValueError("未知的控制模块")
+
+            command_to_send = {
+                "ip": data.get('ip'),
+                "port": int(data.get('port')),
+                "reply_channel": reply_channel_name,
+                "payload": payload
+            }
+
             redis_publisher.publish("udp-command", json.dumps(command_to_send))
-            
-            # 等待 Future 被设置结果，设置5秒超时
-            response_dict = await asyncio.wait_for(future, timeout=5.0)
+            gl_logger.info(f"已向 Redis 'udp-command' 频道发布指令: {command_to_send}")
+
+            # 等待 Future 被设置结果，设置10秒超时
+            response_dict = await asyncio.wait_for(future, timeout=10.0)
             
             await self.send_to_client('control_response', {
                 'module': module, 'success': True,

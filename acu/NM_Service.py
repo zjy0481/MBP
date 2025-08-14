@@ -204,10 +204,14 @@ class NM_Service():
     def __redis_loop(self):
         while self.__redis_loop_active:
             try:
+                # 这个调用会阻塞，直到有消息或超时
                 self.__redis_pubsub.get_message(ignore_subscribe_messages=True, timeout=1.0)
             except Exception as e:
-                gl_logger.error(f"Redis 监听线程出错: {e}")
-                sleep(5)
+                # 仅当服务不是在主动关闭时，才将此异常记录为错误
+                if self.__redis_loop_active:
+                    gl_logger.error(f"Redis 监听线程出错: {e}")
+                    # 如果发生意外错误，暂停一下避免刷屏
+                    sleep(5)
 
     #
     # 判断收到的消息是上报还是响应，并分发给不同处理器

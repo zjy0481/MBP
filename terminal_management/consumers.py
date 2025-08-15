@@ -118,20 +118,20 @@ class DataConsumer(AsyncWebsocketConsumer):
             }
 
             # --- 根据通信协议设置 payload 包（NM下发） ---
-            if module == 'query_work_mode':         # 查询工作模式
+            if module == 'query_work_mode':                     # 查询工作模式
                 payload['op'] = 'query'
                 payload['op_sub'] = 'work_pattern'
 
-            elif module == 'set_work_mode':         # 设置工作模式
+            elif module == 'set_work_mode':                     # 设置工作模式
                 payload['op'] = 'antenna_control'
                 payload['op_sub'] = 'work_pattern'
                 payload['pattern'] = frontend_payload.get('pattern')
 
-            elif module == 'query_device_status':   # 查询设备状态
+            elif module == 'query_device_status':               # 查询设备状态
                 payload['op'] = 'query'
                 payload['op_sub'] = 'equipment_status'
 
-            elif module == 'turn_control':          # 手动控制天线旋转
+            elif module == 'turn_control':                      # 手动控制天线旋转
                 payload['op'] = 'antenna_control'
                 payload['op_sub'] = 'rotate'
                 payload['mode'] = frontend_payload.get('mode')
@@ -139,7 +139,37 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['direct'] = frontend_payload.get('direct')
                 payload['angle'] = frontend_payload.get('angle')
 
-            else:                                   # default
+            elif module in ['adu_soft_rst', 'adu_task_rst']:    # 系统复位
+                payload['op'] = 'antenna_control'
+                payload['op_sub'] = module # 'adu_soft_rst' 或 'adu_task_rst'
+
+            elif module == 'query_rtc':                         # 查询RTC时间
+                payload['op'] = 'query'
+                payload['op_sub'] = 'RTC'
+
+            elif module == 'set_rtc':                           # 设置RTC时间
+                payload['op'] = 'antenna_control'
+                payload['op_sub'] = 'set_RTC'
+                payload['date'] = frontend_payload.get('date')
+                payload['time'] = frontend_payload.get('time')
+            
+            elif module == 'query_report_config':               # 查询上报配置
+                payload['op'] = 'query'
+                payload['op_sub'] = 'report_config'
+
+            elif module == 'set_report_config':                 # 设置上报配置
+                payload['op'] = 'antenna_control'
+                payload['op_sub'] = 'set_report_config'
+                payload['ip'] = frontend_payload.get('ip')
+                payload['port'] = frontend_payload.get('port')
+                payload['mode'] = frontend_payload.get('mode')
+                payload['interval'] = frontend_payload.get('interval')
+
+            elif module == 'query_version':                     # 版本查询
+                payload['op'] = 'query'
+                payload['op_sub'] = 'version'
+
+            else:                                               # default
                 gl_logger.error(f"收到了一个未知的控制模块: {module}")
                 raise ValueError("未知的控制模块")
 

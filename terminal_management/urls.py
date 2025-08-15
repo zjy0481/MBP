@@ -34,4 +34,7 @@ urlpatterns = [
 
     # --- 端站数据与控制 ---
     path('antenna/', views.antenna, name='antenna'),
+
+    # --- 端站系统管理 ---
+    path('systemmanage/', views.systemmanage, name='systemmanage'),
 ]

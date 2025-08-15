@@ -277,6 +277,8 @@ def base_station_delete(request, bts_id):
     # 复用 data_confirm_delete.html 模板
     return render(request, 'data_confirm_delete.html', {'item': station})
 
+# --- 端站数据与控制视图 ---
+
 @login_required
 def antenna(request):
     """渲染端站数据与控制页面"""
@@ -286,3 +288,15 @@ def antenna(request):
         'error': None if success else terminals_or_error
     }
     return render(request, 'antenna.html', context)
+
+# --- 端站系统管理视图 ---
+
+@login_required
+def systemmanage(request):
+    """渲染端站系统管理页面"""
+    success, terminals_or_error = services.get_all_terminals()
+    context = {
+        'terminals': terminals_or_error if success else [],
+        'error': None if success else terminals_or_error
+    }
+    return render(request, 'systemmanage.html', context)

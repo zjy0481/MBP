@@ -78,7 +78,6 @@ function onSocketReady() {
                     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'work_pattern') {
                         if (responseData.result === '1') {
                             alert('工作模式设置成功！');
-                            // 设置成功后，建议自动再查询一次以同步最新状态
                             sendControlCommand('query_work_mode');
                         } else {
                             alert('工作模式设置失败！端站返回错误。');
@@ -167,7 +166,7 @@ function sendControlCommand(module, payload = {}) {
         alert('错误：尚未选择端站或端站信息不完整！');
         return;
     }
-     const message = {
+    const message = {
         type: 'control_command',
         sn: selectedSn,
         ip: selectedIp,

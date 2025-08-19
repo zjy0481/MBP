@@ -4,28 +4,13 @@
 function onSocketReady() {
     console.log("SystemManage.js: WebSocket is ready. Initializing page logic.");
 
-    // --- 变量定义 ---
-    const terminalSelector = document.getElementById('terminal_selector');
-    const confirmButton = document.getElementById('confirm_terminal');
-    const mainContent = document.getElementById('main_content');
-    
-    let selectedSn = null;
-    let selectedIp = null;
-    let selectedPort = null;
-
     // --- 事件监听 ---
-    confirmButton.addEventListener('click', function() {
-        const selectedOption = terminalSelector.options[terminalSelector.selectedIndex];
-        if (!selectedOption || !selectedOption.value) {
-            alert('请先选择一个端站！');
-            return;
-        }
-        selectedSn = selectedOption.value;
-        selectedIp = selectedOption.dataset.ip;
-        selectedPort = selectedOption.dataset.port;
-        mainContent.style.display = 'block';
-        alert(`已选择端站: ${selectedSn}。`);
-        resetAllStatus(); // 切换端站时，重置所有状态
+    document.addEventListener('terminalSelected', function(e) {
+        const detail = e.detail;
+        console.log("SystemManage page received selection:", detail);
+        
+        // 切换端站时，重置所有状态
+        resetAllStatus();
     });
 
     // --- WebSocket 消息处理器 ---
@@ -59,7 +44,7 @@ function onSocketReady() {
                     break;
             }
         } else {
-             alert(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
+            alert(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
         }
     };
 
@@ -146,10 +131,17 @@ function onSocketReady() {
 
     // --- 事件绑定 ---
     function sendControlCommand(module, payload = {}) {
-        if (!selectedSn) { alert('请先选择一个端站！'); return; }
+        const activeItem = document.querySelector('#terminal-list .list-group-item.active');
+        if (!activeItem) {
+            alert('错误：没有选择任何端站！');
+            return;
+        }
+        const sn = activeItem.dataset.sn;
+        const ip = activeItem.dataset.ip;
+        const port = activeItem.dataset.port;
+
         const message = {
-            type: 'control_command', sn: selectedSn, ip: selectedIp, port: selectedPort,
-            module: module, payload: payload
+            type: 'control_command', sn, ip, port, module, payload
         };
         window.dataSocket.send(JSON.stringify(message));
     }

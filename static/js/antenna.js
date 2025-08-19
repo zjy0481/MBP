@@ -5,34 +5,26 @@ function onSocketReady() {
     console.log("Antenna.js: WebSocket is ready. Initializing page logic.");
 
     // --- 变量定义 ---
-    const terminalSelector = document.getElementById('terminal_selector');
-    const confirmButton = document.getElementById('confirm_terminal');
-    const mainContent = document.getElementById('main_content');
-    
     let selectedSn = null;
+    let selectedIp = null;
+    let selectedPort = null;
 
     // --- 事件监听 ---
-    // “确认选择”按钮的点击事件
-    // (因为这个函数在 onSocketReady 内部，所以它被绑定时，WebSocket 必定是可用的)
-    confirmButton.addEventListener('click', function() {
-        const selectedOption = terminalSelector.options[terminalSelector.selectedIndex];
-        if (!selectedOption || !selectedOption.value) {
-            alert('请先选择一个端站！');
-            return;
-        }
-        
-        selectedSn = selectedOption.value;
-        mainContent.style.display = 'block';
+    document.addEventListener('terminalSelected', function(e) {
+        const detail = e.detail;
+        console.log("Antenna page received selection:", detail);
 
-        // 重置工作模式状态为初始状态
-        document.getElementById('work_mode').value = ""; // 选中占位符
+        selectedSn = detail.sn;
+        selectedIp = detail.ip;
+        selectedPort = detail.port;
+
+        // 重置UI状态
+        document.getElementById('work_mode').value = "";
         const workModeStatus = document.getElementById('work_mode_status');
         workModeStatus.innerText = '当前模式：暂无数据';
-        workModeStatus.className = 'form-text mt-2'; // 恢复为灰色
-
-        alert(`已选择端站: ${selectedSn}。现在将为您加载最新数据。`);
+        workModeStatus.className = 'form-text mt-2';
         
-        // 调用发送函数
+        // 发起数据请求
         fetchLatestReport(selectedSn);
     });
 
@@ -157,22 +149,17 @@ function fetchLatestReport(sn) {
 }
 
 function sendControlCommand(module, payload = {}) {
-    const selectedSn = document.getElementById('terminal_selector').value;
-    const selectedOption = document.getElementById('terminal_selector').selectedOptions[0];
-    const selectedIp = selectedOption.dataset.ip;
-    const selectedPort = selectedOption.dataset.port;
-
-    if (!selectedSn || !selectedIp || !selectedPort) {
-        alert('错误：尚未选择端站或端站信息不完整！');
+    const activeItem = document.querySelector('#terminal-list .list-group-item.active');
+    if (!activeItem) {
+        alert('错误：没有选择任何端站！');
         return;
     }
+    const sn = activeItem.dataset.sn;
+    const ip = activeItem.dataset.ip;
+    const port = activeItem.dataset.port;
+
     const message = {
-        type: 'control_command',
-        sn: selectedSn,
-        ip: selectedIp,
-        port: selectedPort,
-        module: module,
-        payload: payload
+        type: 'control_command', sn, ip, port, module, payload
     };
     window.dataSocket.send(JSON.stringify(message));
 }

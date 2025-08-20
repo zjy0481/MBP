@@ -31,13 +31,17 @@ function onSocketReady() {
     // --- WebSocket消息处理 ---
     // 定义 antenna.html 专属的 WebSocket 消息处理器
     const antennaPageMessageHandler = function(message) {
+        // 只处理与当前选中端站相关的消息
+        if (message.sn !== selectedSn) {
+            return;
+        }
+
         if (message.type === 'latest_report_data') {
-            if (message.sn === selectedSn) {
-                if (message.data) {
-                    updatePageData(message.data);
-                } else {
-                    alert(`未能获取到SN为 ${message.sn} 的最新上报数据。可能该端站暂无数据。`);
-                }
+            if (message.data) {
+                console.log(`收到 SN [${selectedSn}] 的实时上报数据，正在更新页面...`);
+                updatePageData(message.data);
+            } else {
+                alert(`未能获取到SN为 ${message.sn} 的最新上报数据。可能该端站暂无数据。`);
             }
         } else if (message.type === 'control_response') {
             if (message.success) {

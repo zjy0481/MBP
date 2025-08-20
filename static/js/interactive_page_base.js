@@ -39,12 +39,19 @@ document.addEventListener('DOMContentLoaded', function() {
             contentPlaceholder.style.display = 'none';
             mainContent.style.display = 'block';
 
-            // 派发一个自定义事件，通知页面专属的JS文件
             const terminalData = {
                 sn: this.dataset.sn,
                 ip: this.dataset.ip,
-                port: this.dataset.port
-            };
+                port: this.dataset.port,
+                shipName: this.dataset.shipName,
+                mmsi: this.dataset.mmsi
+            }
+            document.getElementById('selected_ship_name').innerText = terminalData.shipName;
+            document.getElementById('selected_mmsi').innerText = terminalData.mmsi;
+            document.getElementById('selected_sn').innerText = terminalData.sn;
+            document.getElementById('selected_ip').innerText = terminalData.ip;
+            document.getElementById('selected_port').innerText = terminalData.port;
+            
             const event = new CustomEvent('terminalSelected', { detail: terminalData });
             document.dispatchEvent(event);
         });

@@ -62,8 +62,10 @@
                     {% for terminal in terminals %}
                     <li class="list-group-item" 
                         data-sn="{{ terminal.sn }}" 
-                        data-ip="{{ terminal.ip_address }}" 
-                        data-port="{{ terminal.port_number }}">
+                        data-ip="{{ terminal.ip_address|default:'N/A' }}" 
+                        data-port="{{ terminal.port_number|default:'N/A' }}"
+                        data-ship-name="{{ terminal.ship.ship_name }}"
+                        data-mmsi="{{ terminal.ship.mmsi }}">
                         <strong>{{ terminal.ship.ship_name }}</strong>
                         <small class="text-muted d-block">{{ terminal.sn }}</small>
                     </li>
@@ -77,6 +79,16 @@
                 <h3>请先从左侧列表选择一个端站</h3>
             </div>
             <div id="main_content" style="display: none;">
+                <fieldset class="mb-4">
+                    <legend>当前端站信息</legend>
+                    <div class="row">
+                        <div class="col-md-6"><p class="mb-1"><strong>所属船舶:</strong> <span id="selected_ship_name"></span></p></div>
+                        <div class="col-md-6"><p class="mb-1"><strong>MMSI:</strong> <span id="selected_mmsi"></span></p></div>
+                        <div class="col-md-6"><p class="mb-1"><strong>端站SN:</strong> <span id="selected_sn"></span></p></div>
+                        <div class="col-md-6"><p class="mb-1"><strong>IP 地址:</strong> <span id="selected_ip"></span></p></div>
+                        <div class="col-md-6"><p class="mb-1"><strong>端口号:</strong> <span id="selected_port"></span></p></div>
+                    </div>
+                </fieldset>
                 {% block interactive_content %}{% endblock %}
             </div>
         </div>

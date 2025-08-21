@@ -87,6 +87,7 @@
                         <div class="col-md-6"><p class="mb-1"><strong>端站SN:</strong> <span id="selected_sn"></span></p></div>
                         <div class="col-md-6"><p class="mb-1"><strong>IP 地址:</strong> <span id="selected_ip"></span></p></div>
                         <div class="col-md-6"><p class="mb-1"><strong>端口号:</strong> <span id="selected_port"></span></p></div>
+                        {% block terminal_info_extra %}{% endblock %}
                     </div>
                 </fieldset>
                 {% block interactive_content %}{% endblock %}

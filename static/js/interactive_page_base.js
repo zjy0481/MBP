@@ -52,6 +52,15 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('selected_ip').innerText = terminalData.ip;
             document.getElementById('selected_port').innerText = terminalData.port;
             
+            const lastReportDate = this.dataset.lastReportDate;
+            const lastReportTime = this.dataset.lastReportTime;
+            const lastReportEl = document.getElementById('selected_last_report');
+            if (lastReportDate && lastReportTime) {
+                lastReportEl.innerText = `${lastReportDate} ${lastReportTime}`;
+            } else {
+                lastReportEl.innerText = '暂无上报数据';
+            }
+            
             const event = new CustomEvent('terminalSelected', { detail: terminalData });
             document.dispatchEvent(event);
         });

@@ -31,18 +31,20 @@ function onSocketReady() {
     // --- WebSocket消息处理 ---
     // 定义 antenna.html 专属的 WebSocket 消息处理器
     const antennaPageMessageHandler = function(message) {
-        // 只处理与当前选中端站相关的消息
-        if (message.sn !== selectedSn) {
-            return;
-        }
-
         if (message.type === 'latest_report_data') {
-            if (message.data) {
-                console.log(`收到 SN [${selectedSn}] 的实时上报数据，正在更新页面...`);
-                updatePageData(message.data);
-            } else {
-                alert(`未能获取到SN为 ${message.sn} 的最新上报数据。可能该端站暂无数据。`);
+            const report = message.data;
+            
+            // 实时更新逻辑
+            if (report && report.sn === selectedSn) {
+                console.log(`收到当前选中端站 [${selectedSn}] 的实时数据，正在更新页面...`);
+                updatePageData(report);
+            } 
+            // 手动查询后没有数据的处理逻辑
+            else if (!report && message.sn === selectedSn) {
+                document.getElementById('selected_last_report').innerText = '暂无上报数据';
+                alert(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
             }
+            
         } else if (message.type === 'control_response') {
             if (message.success) {
                 const responseData = message.data; // data 是端站返回的完整JSON
@@ -184,7 +186,9 @@ function onTurn(axis, direct) {
 }
 
 function updatePageData(report) {
-    // (这部分UI更新逻辑保持不变)
+    if (report.report_date && report.report_time) {
+        document.getElementById('selected_last_report').innerText = `${report.report_date} ${report.report_time}`;
+    }
     setSystemStatus(parseInt(report.op_sub, 10));
     setLinkStatus(parseInt(report.op, 10));
     document.getElementById("bts_name").value = report.bts_name || "N/A";

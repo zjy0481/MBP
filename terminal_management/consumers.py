@@ -232,7 +232,9 @@ class DataConsumer(AsyncWebsocketConsumer):
     # 从 channel layer 接收广播消息并推送给前端
     async def send_update(self, event):
         message = event['message']
-        await self.send(text_data=json.dumps(message))
+        gl_logger.info(f"正在向前端发送广播更新: {json.dumps(message)}")
+        # 使用与 send_to_client 相同的 `{'message': ...}` 包装器
+        await self.send(text_data=json.dumps({'message': message}))
 
     async def udp_message(self, event):
         await self.channel_layer.send(event['reply_channel'], {

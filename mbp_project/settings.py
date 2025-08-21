@@ -134,6 +134,7 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'  # 登录成功后跳转的URL名称
 LOGOUT_REDIRECT_URL = 'home' # 登出成功后跳转的URL名称
 

@@ -1,6 +1,6 @@
 # terminal_management/views.py
 from django.shortcuts import render, redirect
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
@@ -8,6 +8,7 @@ from . import services
 from .forms import ShipInfoForm
 from .forms import TerminalInfoForm
 from .forms import BaseStationInfoForm
+import re
 
 def home(request):
     """
@@ -15,6 +16,13 @@ def home(request):
     它只是简单地渲染一个静态的 home.html 页面。
     """
     return render(request, 'home.html')
+
+def logout_view(request):
+    """
+    处理用户登出并显示自定义的登出成功页面。
+    """
+    logout(request)
+    return render(request, 'logout.html')
 
 def register(request):
     """

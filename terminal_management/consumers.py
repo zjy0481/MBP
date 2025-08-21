@@ -6,11 +6,9 @@ import redis
 from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-# from channels.layers import get_channel_layer
 from .services import get_latest_report_by_sn
 from utils import gl_logger
 
-# from acu.NM_Service import NM_Service
 import asyncio
 
 # --- 创建一个专用于发布的、标准的 Redis 连接 ---
@@ -26,6 +24,8 @@ except Exception as e:
 class DataConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_group_name = 'data_updates'
+        # 初始化一个集合用于追踪后台任务
+        self.background_tasks = set()
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -36,6 +36,10 @@ class DataConsumer(AsyncWebsocketConsumer):
         gl_logger.info(f"WebSocket 链接已建立: {self.channel_name}")
 
     async def disconnect(self, close_code):
+        # 在断开连接时，取消所有正在运行的后台任务
+        for task in self.background_tasks:
+            task.cancel()
+
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -50,12 +54,17 @@ class DataConsumer(AsyncWebsocketConsumer):
 
         # 使用 asyncio.create_task 在后台执行任务，避免阻塞 receive 方法
         if message_type == 'get_latest_report':
-            asyncio.create_task(self.handle_get_latest_report(data))
+            task = asyncio.create_task(self.handle_get_latest_report(data))
         elif message_type == 'control_command':
-            asyncio.create_task(self.handle_control_command(data))
+            task = asyncio.create_task(self.handle_control_command(data))
         else:
             gl_logger.warning(f"接收到前端的未知类型消息，类型为: {message_type}")
         
+        # 将新创建的任务添加到追踪集合中，并设置完成后的清理回调
+        if task:
+            self.background_tasks.add(task)
+            task.add_done_callback(self.background_tasks.discard)
+
     # 专门处理获取最新上报数据的请求
     async def handle_get_latest_report(self, data):
         sn = data.get('sn')
@@ -197,6 +206,9 @@ class DataConsumer(AsyncWebsocketConsumer):
                 'module': module, 'success': False,
                 'data': None, 'error': "操作失败：端站无响应（超时）。"
             })
+        except asyncio.CancelledError:
+            gl_logger.info(f"控制指令 '{module}' 因连接关闭而被取消。")
+            # 此处无需向客户端发送消息，因为它已经断开了
         except Exception as e:
             gl_logger.error(f"处理控制指令 '{module}' 时发生异常: {e}", exc_info=True)
             await self.send_to_client('control_response', {
@@ -204,7 +216,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                 'data': None, 'error': "服务器内部错误。"
             })
         finally:
-            self.pending_replies.pop(reply_channel_name, None)
+            self.pending_replies.pop(request_id, None)
             await self.channel_layer.group_discard(reply_channel_name, self.channel_name)
 
     # 用于接收 NM_Service 回复的处理器

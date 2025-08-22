@@ -189,8 +189,8 @@ function updatePageData(report) {
     if (report.report_date && report.report_time) {
         document.getElementById('selected_last_report').innerText = `${report.report_date} ${report.report_time}`;
     }
-    setSystemStatus(parseInt(report.op_sub, 10));
-    setLinkStatus(parseInt(report.op, 10));
+    setSystemStatus(parseInt(report.system_stat, 10));
+    setLinkStatus(parseInt(report.wireless_network_stat, 10));
     document.getElementById("bts_name").value = report.bts_name || "N/A";
     document.getElementById("bts_no").value = report.bts_number || "N/A";
     document.getElementById("bts_longitude").value = parseFloat(report.bts_long)?.toFixed(3) || "N/A";

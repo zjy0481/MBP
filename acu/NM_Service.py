@@ -45,6 +45,8 @@ JSON_TO_MODEL_MAP = {
     'op_sub': 'op_sub',
 
     # 端站状态信息 (Terminal Status)
+    'system_stat': 'system_stat',
+    'wireless_network_stat': 'wireless_network_stat',
     'long': 'long',
     'lat': 'lat',
     'theory_yaw': 'theory_yaw',

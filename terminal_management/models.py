@@ -164,6 +164,8 @@ class TerminalReport(models.Model):
     op_sub = models.CharField(max_length=20, verbose_name="操作子类")
 
     # -- 端站状态信息 --
+    system_stat = models.IntegerField(verbose_name="系统状态", null=True, blank=True)
+    wireless_network_stat = models.IntegerField(verbose_name="无线网络状态", null=True, blank=True)
     long = models.FloatField(verbose_name="端站经度", blank=True, null=True)
     lat = models.FloatField(verbose_name="端站纬度", blank=True, null=True)
     theory_yaw = models.FloatField(verbose_name="理论方位角", blank=True, null=True)

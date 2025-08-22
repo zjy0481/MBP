@@ -19,9 +19,22 @@ function onSocketReady() {
 
         if (message.success) {
             const responseData = message.data;
-            alert(`操作成功！模块: ${message.module}`);
+            const module = message.module;
+            
+            if (responseData.hasOwnProperty('result')) {    // 处理端站响应级别的失败
+                if (responseData.result === '1') {
+                    alert(`操作 ${module} 成功！`);
+                } else {
+                    let errorMessage = `操作 ${module} 失败。`;
+                    if (responseData.error) {
+                        errorMessage += `\n错误信息: ${responseData.error}`;
+                    }
+                    alert(errorMessage);
+                }
+            } else {
+                alert(`操作成功！模块: ${module}`);
 
-            // 根据模块处理响应
+                // 根据模块处理响应
             switch (message.module) {
                 case 'query_work_mode':
                     handleWorkModeResponse(responseData);
@@ -43,7 +56,10 @@ function onSocketReady() {
                 case 'set_report_config':
                     break;
             }
+            }
+
         } else {
+            // 这部分逻辑处理WebSocket通信级别的失败（如超时），保持不变
             alert(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
         }
     };

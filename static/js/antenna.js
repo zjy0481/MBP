@@ -48,7 +48,7 @@ function onSocketReady() {
         } else if (message.type === 'control_response') {
             if (message.success) {
                 const responseData = message.data; // data 是端站返回的完整JSON
-                alert(`操作成功！模块: ${message.module}`);
+                alert(`成功收到来自端站的响应，模块: ${message.module}`);
                 
                 // --- 将端站响应信息反映到前端 ---
 
@@ -78,7 +78,7 @@ function onSocketReady() {
                             alert('工作模式设置成功！');
                             sendControlCommand('query_work_mode');
                         } else {
-                            alert('工作模式设置失败！端站返回错误。');
+                            alert(`工作模式设置失败！\n原因: ${responseData.error || '未知'}`);
                         }
                     }
                 }

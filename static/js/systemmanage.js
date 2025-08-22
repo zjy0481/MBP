@@ -129,6 +129,49 @@ function onSocketReady() {
         }
     }
 
+    function setupUpgradeHandlers(type) { // type can be 'adu' or 'acu'
+        const uploadBtn = document.getElementById(`${type}_upload`);
+        const upgradeBtn = document.getElementById(`${type}_upgrade`);
+        const fileInput = document.getElementById(`${type}_file`);
+
+        // 上传按钮事件
+        uploadBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先选择一个文件！');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // e.target.result 的格式是 "data:;base64,xxxxxx"，我们只需要逗号后面的部分
+                const fileContent = e.target.result.split(',')[1];
+                sendControlCommand(`upload_${type}_file`, {
+                    content: fileContent,
+                    file_name: file.name
+                });
+                alert('文件上传指令已发送，请等待设备响应...');
+            };
+            reader.onerror = () => {
+                alert('读取文件时发生错误！');
+            };
+            reader.readAsDataURL(file); // 将文件读取为 Base64 编码的字符串
+        });
+
+        // 升级按钮事件
+        upgradeBtn.addEventListener('click', () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('请先选择一个文件！');
+                return;
+            }
+            sendControlCommand(`update_${type}`, {
+                file_name: file.name
+            });
+            alert('软件升级指令已发送，请等待设备响应，升级所需时间可能较久，请您耐心等待...');
+        });
+    }
+
     // --- 事件绑定 ---
     function sendControlCommand(module, payload = {}) {
         const activeItem = document.querySelector('#terminal-list .list-group-item.active');
@@ -181,11 +224,9 @@ function onSocketReady() {
     // 版本查询
     document.getElementById('query_version').addEventListener('click', () => sendControlCommand('query_version'));
 
-    // 升级版本 (todo)
-    document.getElementById('adu_upload').addEventListener('click', () => alert('上传功能待实现'));
-    document.getElementById('adu_upgrade').addEventListener('click', () => alert('升级功能待实现'));
-    document.getElementById('acu_upload').addEventListener('click', () => alert('上传功能待实现'));
-    document.getElementById('acu_upgrade').addEventListener('click', () => alert('升级功能待实现'));
+    // 升级版本 为 ADU 和 ACU 分别设置事件处理器
+    setupUpgradeHandlers('adu');
+    setupUpgradeHandlers('acu');
     
     // 初始化页面
     resetAllStatus();

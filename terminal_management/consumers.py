@@ -178,6 +178,17 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['op'] = 'query'
                 payload['op_sub'] = 'version'
 
+            elif module in ['upload_adu_file', 'upload_acu_file']: # ADU/ACU 文件上传
+                payload['op'] = 'upload_file'
+                payload['op_sub'] = 'adu_update_file' if module == 'upload_adu_file' else 'acu_update_file'
+                payload['content'] = frontend_payload.get('content')
+                payload['file_name'] = frontend_payload.get('file_name')
+                
+            elif module in ['update_adu', 'update_acu']:          # ADU/ACU 软件升级
+                payload['op'] = 'software_update'
+                payload['op_sub'] = 'adu_update' if module == 'update_adu' else 'acu_update'
+                payload['file_name'] = frontend_payload.get('file_name')
+
             else:                                               # default
                 gl_logger.error(f"收到了一个未知的控制模块: {module}")
                 raise ValueError("未知的控制模块")
@@ -192,8 +203,10 @@ class DataConsumer(AsyncWebsocketConsumer):
             redis_publisher.publish("udp-command", json.dumps(command_to_send))
             gl_logger.info(f"已向 Redis 'udp-command' 频道发布指令: {command_to_send}")
 
-            # 等待 Future 被设置结果，设置10秒超时
-            response_dict = await asyncio.wait_for(future, timeout=10.0)
+            # 等待 Future 被设置结果，设置10秒超时，对于更新功能设置60秒超时
+            timeout = 60.0 if module in ['update_adu', 'update_acu'] else 10.0
+            
+            response_dict = await asyncio.wait_for(future, timeout=timeout)
             
             await self.send_to_client('control_response', {
                 'module': module, 'success': True,

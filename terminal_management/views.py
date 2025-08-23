@@ -8,7 +8,8 @@ from . import services
 from .forms import ShipInfoForm
 from .forms import TerminalInfoForm
 from .forms import BaseStationInfoForm
-import re
+from django.http import JsonResponse
+from datetime import datetime
 
 def home(request):
     """
@@ -308,3 +309,57 @@ def systemmanage(request):
         'error': None if success else terminals_or_error
     }
     return render(request, 'systemmanage.html', context)
+
+# --- GIS 视图 ---
+@login_required
+def gis_page(request):
+    """渲染 GIS 地图页面"""
+    success, ships_or_error = services.get_all_ships()
+    context = {
+        'ships': ships_or_error if success else [],
+        'error': None if success else ships_or_error
+    }
+    return render(request, 'gis.html', context)
+
+@login_required
+def get_ship_track(request):
+    """获取指定船舶在特定时间范围内的轨迹点数据API"""
+    mmsi = request.GET.get('mmsi')
+    start_time_str = request.GET.get('start_time')
+    end_time_str = request.GET.get('end_time')
+
+    if not all([mmsi, start_time_str, end_time_str]):
+        return JsonResponse({'error': '缺少必要的参数(mmsi, start_time, end_time)'}, status=400)
+
+    try:
+        start_time = datetime.fromisoformat(start_time_str)
+        end_time = datetime.fromisoformat(end_time_str)
+    except ValueError:
+        return JsonResponse({'error': '时间格式无效，请使用ISO 8601格式'}, status=400)
+
+    # 步骤 1: 首先获取船舶信息
+    ship_success, ship_or_error = services.get_ship_by_mmsi(mmsi)
+    if not ship_success:
+        return JsonResponse({'error': ship_or_error}, status=404)
+    ship = ship_or_error
+
+    # 步骤 2: 获取该船的轨迹报告
+    success, reports_or_error = services.get_reports_by_mmsi_and_time(mmsi, start_time, end_time)
+    if not success:
+        return JsonResponse({'error': str(reports_or_error)}, status=500)
+
+    # 步骤 3: 序列化数据，不再进行错误的跨表查询
+    track_data = list(reports_or_error.values(
+        'sn', 'report_date', 'report_time', 'long', 'lat', 'yaw', 'bts_name'
+    ))
+
+    # 步骤 4: 手动附加船舶信息并格式化时间
+    for report in track_data:
+        report['report_date'] = report['report_date'].isoformat()
+        report['report_time'] = report['report_time'].isoformat()
+        # 将从步骤1获取的船舶信息附加到每条记录中
+        report['ship_name'] = ship.ship_name
+        report['mmsi'] = ship.mmsi
+        report['ship_owner'] = ship.ship_owner
+
+    return JsonResponse(track_data, safe=False)

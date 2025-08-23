@@ -37,4 +37,8 @@ urlpatterns = [
 
     # --- 端站系统管理 ---
     path('systemmanage/', views.systemmanage, name='systemmanage'),
+
+    # --- GIS ---
+    path('gis/', views.gis_page, name='gis_page'),
+    path('api/get_track/', views.get_ship_track, name='get_ship_track'),
 ]

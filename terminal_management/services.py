@@ -3,6 +3,7 @@
 from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from .models import ShipInfo, TerminalInfo, BaseStationInfo, TerminalReport
+from django.db.models import Q
 
 # -----------------------------------------------------------------------------
 # 统一的返回格式说明
@@ -285,3 +286,42 @@ def get_latest_report_by_sn(sn):
             return (True, None) # 即使没有记录，操作本身也是成功的，返回None
     except Exception as e:
         return (False, f"按SN码查询最新上报记录时发生错误: {e}")
+
+# =============================================================================
+# GIS 页面相关操作函数
+# =============================================================================
+
+def get_reports_by_mmsi_and_time(mmsi, start_time, end_time):
+    """
+    根据船舶MMSI和时间范围，查询该船所有端站的上报记录。
+    结果按照上报时间倒序排列 (从新到旧)。
+    """
+    try:
+        # 步骤1: 根据 mmsi 找到该船关联的所有端站的 sn 列表
+        terminal_sns = TerminalInfo.objects.filter(ship_id=mmsi).values_list('sn', flat=True)
+
+        if not terminal_sns.exists():
+            return (True, TerminalReport.objects.none()) # 船只存在但没有关联端站，返回空的QuerySet
+
+        # 步骤2: 使用 sn 列表和时间范围过滤上报记录
+        # 由于时间和日期是分开的字段，我们需要构造一个稍微复杂的查询
+        start_date = start_time.date()
+        start_t = start_time.time()
+        end_date = end_time.date()
+        end_t = end_time.time()
+
+        reports = TerminalReport.objects.filter(
+            sn__in=list(terminal_sns),
+            # 日期部分在此范围内
+            report_date__range=(start_date, end_date)
+        ).exclude(
+            # 排除掉开始日期里，时间早于开始时间的部分
+            Q(report_date=start_date, report_time__lt=start_t) |
+            # 排除掉结束日期里，时间晚于结束时间的部分
+            Q(report_date=end_date, report_time__gt=end_t)
+        ).order_by('-report_date', '-report_time') # 先按日期降序，再按时间降序
+
+        return (True, reports)
+
+    except Exception as e:
+        return (False, f"根据MMSI和时间查询轨迹数据时发生错误: {e}")

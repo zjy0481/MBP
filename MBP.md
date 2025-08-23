@@ -15,6 +15,75 @@
 
 本文档旨在为后续的开发及维护人员提供清晰、准确的技术指引。
 
+文件架构：
+
+```
+MBP-dev/
+├── .gitignore               # Git 配置文件，用于指定哪些文件或文件夹不应被 Git 跟踪。
+├── MBP.md                   # Markdown 文件，可能是项目的主要文档或说明。
+├── MBP通信协议.md           # Markdown 文件，详细描述了项目所使用的通信协议。
+├── manage.py                # Django 项目的命令行工具，用于执行项目管理任务（如运行服务器、数据库迁移等）。
+├── test_req_res.py          # 一个 Python 脚本，用于测试请求和响应，可能是用于 API 或网络服务的测试。
+│
+├── acu/                     # "Application Control Unit" (应用控制单元) 的缩写，一个独立的 Python 包。
+│   └── NM_Service.py        # 网络管理服务 (Network Management Service)，处理与网络相关的任务。
+│
+├── mbp_project/             # Django 项目的核心配置目录。
+│   ├── asgi.py              # ASGI (Asynchronous Server Gateway Interface) 配置文件，用于异步 Web 服务器。
+│   ├── settings.py          # Django 项目的全局配置文件，包含数据库、静态文件、中间件等的设置。
+│   ├── urls.py              # 项目的根 URL 配置文件，定义了整个网站的 URL 路由。
+│   └── wsgi.py              # WSGI (Web Server Gateway Interface) 配置文件，用于传统的同步 Web 服务器。
+│
+├── static/                  # 存放静态文件的目录，如 CSS、JavaScript 和图片。
+│   ├── js/                  # 存放 JavaScript 文件。
+│       ├── antenna.js       # 与天线页面 (antenna.html) 相关的 JavaScript 代码。
+│       ├── interactive_page_base.js # 交互式页面的基础 JavaScript 文件。
+│       └── systemmanage.js  # 与系统管理页面 (systemmanage.html) 相关的 JavaScript 代码。
+│   └── images/              # 存放图片素材。
+│       └── direction.png  	 # gis素材
+│
+├── templates/               # 存放 HTML 模板文件的目录。
+│   ├── _base_interactive_page.html # 交互式页面的基础模板。
+│   ├── antenna.html         # 天线信息展示页面。
+│   ├── base.html            # 所有页面继承的基础模板文件。
+│   ├── base_station_form.html # 用于创建或编辑基站信息的表单页面。
+│   ├── base_station_list.html # 展示基站列表的页面。
+│   ├── data_confirm_delete.html # 删除数据前的确认页面。
+│   ├── home.html            # 项目的主页或仪表盘。
+│   ├── login.html           # 用户登录页面。
+│   ├── logout.html          # 用户登出页面。
+│   ├── register.html        # 用户注册页面。
+│   ├── ship_confirm_delete.html # 删除船舶信息前的确认页面。
+│   ├── ship_form.html       # 用于创建或编辑船舶信息的表单页面。
+│   ├── ship_list.html       # 展示船舶列表的页面。
+│   ├── systemmanage.html    # 系统管理页面。
+│   ├── terminal_form.html   # 用于创建或编辑终端信息的表单页面。
+│   └── terminal_list.html   # 展示终端列表的页面。
+│
+├── terminal_management/     # 一个名为 "terminal_management" 的 Django 应用，用于处理终端相关的业务逻辑。
+│   ├── __init__.py          # 将该目录标识为 Python 包。
+│   ├── admin.py             # 将此应用的 models 注册到 Django 的后台管理界面。
+│   ├── apps.py              # 该应用的配置文件。
+│   ├── consumers.py         # 处理 WebSocket 连接的消费者 (用于 Django Channels)。
+│   ├── forms.py             # 定义了该应用中使用的表单。
+│   ├── management/          # 存放自定义 Django 管理命令的目录。
+│   │   └── commands/        #
+│   │       └── start_nm_service.py # 一个自定义命令，用于启动网络管理服务。
+│   ├── models.py            # 定义了该应用的数据库模型 (数据结构)。
+│   ├── routing.py           # 为 Django Channels 定义 WebSocket 的路由。
+│   ├── services.py          # 存放业务逻辑代码，将视图和模型分离。
+│   ├── signals.py           # 定义了该应用中的信号处理器。
+│   ├── tests.py             # 包含了该应用的单元测试。
+│   ├── urls.py              # 定义了该应用的 URL 路由。
+│   └── views.py             # 定义了该应用的视图函数或类，处理用户的 HTTP 请求并返回响应。
+│
+└── utils/                   # 存放通用工具或辅助函数的目录。
+    ├── __init__.py          # 将该目录标识为 Python 包。
+    └── log.py               # 日志记录相关的配置文件或工具。
+```
+
+
+
 
 
 ## 2. 技术栈

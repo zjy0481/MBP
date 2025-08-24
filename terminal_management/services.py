@@ -4,6 +4,7 @@ from django.db import transaction, IntegrityError
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from .models import ShipInfo, TerminalInfo, BaseStationInfo, TerminalReport
 from django.db.models import Q
+from django.utils import timezone
 
 # -----------------------------------------------------------------------------
 # 统一的返回格式说明
@@ -143,6 +144,26 @@ def update_terminal(sn, new_ship_mmsi, new_ip_address=None, new_port_number=None
         return (False, f"更新失败：新的所属船舶MMSI '{new_ship_mmsi}' 不存在。")
     except Exception as e:
         return (False, f"更新端站时发生未知错误: {e}")
+
+def update_terminal_network_info(sn, ip_address, port):
+    """
+    根据SN码更新端站的网络信息（IP地址和端口号）。
+    使用事务以确保操作的原子性。
+    """
+    try:
+        with transaction.atomic():
+            # 先获取对象
+            terminal = TerminalInfo.objects.get(sn=sn)
+            # 再更新字段并保存
+            terminal.ip_address = ip_address
+            terminal.port_number = port
+            terminal.save(update_fields=['ip_address', 'port_number'])
+        
+        return (True, f"SN '{sn}' 的网络信息已更新为 {ip_address}:{port}。")
+    except TerminalInfo.DoesNotExist:
+        return (False, f"更新失败：未找到SN为 '{sn}' 的端站。")
+    except Exception as e:
+        return (False, f"更新SN '{sn}' 的网络信息时发生错误: {e}")
 
 def delete_terminal(sn):
     """根据 SN 码删除一个端站。"""
@@ -304,11 +325,13 @@ def get_reports_by_mmsi_and_time(mmsi, start_time, end_time):
             return (True, TerminalReport.objects.none()) # 船只存在但没有关联端站，返回空的QuerySet
 
         # 步骤2: 使用 sn 列表和时间范围过滤上报记录
+        local_start_time = timezone.localtime(start_time)
+        local_end_time = timezone.localtime(end_time)
         # 由于时间和日期是分开的字段，我们需要构造一个稍微复杂的查询
-        start_date = start_time.date()
-        start_t = start_time.time()
-        end_date = end_time.date()
-        end_t = end_time.time()
+        start_date = local_start_time.date()
+        start_t = local_start_time.time()
+        end_date = local_end_time.date()
+        end_t = local_end_time.time()
 
         reports = TerminalReport.objects.filter(
             sn__in=list(terminal_sns),

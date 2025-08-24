@@ -28,6 +28,7 @@ from django.conf import settings
 
 from django.db import models
 from terminal_management.models import TerminalReport   # 引入django生成的端站上报表
+from terminal_management import services
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -280,7 +281,20 @@ class NM_Service():
                             value = str(value)
                         model_data[model_field] = value
 
-                TerminalReport.objects.create(**model_data)
+                success, result = services.create_terminal_report(**model_data)
+                if not success:
+                    # 如果存储失败，记录错误并提前返回
+                    gl_logger.error(f"存储上报数据失败 (SN: {msg_dict.get('sn')}): {result}")
+                    return
+                sn = msg_dict.get('sn')
+                if sn:
+                    update_success, update_result = services.update_terminal_network_info(sn, peer_ip, peer_port)
+                    if not update_success:
+                        # 如果更新失败，只记录警告，不影响主流程
+                        gl_logger.warning(f"更新端站网络信息失败 (SN: {sn}): {update_result}")
+                    else:
+                        gl_logger.info(f"成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
+
                 gl_logger.info(f"成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
             else:
                 gl_logger.warning(f"已忽略 op={op}, op_sub={op_sub} 的消息（非上报消息）。")

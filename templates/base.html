@@ -36,13 +36,7 @@
                 </li>
                 {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'ship_list' %}">船舶管理</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'terminal_list' %}">端站管理</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'base_station_list' %}">基站管理</a>
+                    <a class="nav-link" href="{% url 'gis_page' %}">船舶信息地图</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'antenna' %}">端站数据与控制</a>
@@ -51,7 +45,13 @@
                     <a class="nav-link" href="{% url 'systemmanage' %}">端站系统管理</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'gis_page' %}">船舶信息地图</a>
+                    <a class="nav-link" href="{% url 'ship_list' %}">船舶管理</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'terminal_list' %}">端站管理</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'base_station_list' %}">基站管理</a>
                 </li>
                 {% endif %}
             </ul>

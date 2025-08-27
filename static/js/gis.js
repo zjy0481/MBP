@@ -94,7 +94,22 @@ document.addEventListener('DOMContentLoaded', function () {
         map.addControl(new BMap.OverviewMapControl());
     }
 
-    function clearShipOverlays(mmsi) {
+    function clearAllShipOverlays() {
+        // 遍历存储覆盖物的对象的所有键 (MMSI)
+        Object.keys(shipOverlays).forEach(mmsi => {
+            // 移除每个MMSI对应的标记点和路径
+            if (shipOverlays[mmsi]) {
+                shipOverlays[mmsi].markers.forEach(marker => map.removeOverlay(marker));
+                if (shipOverlays[mmsi].polyline) {
+                    map.removeOverlay(shipOverlays[mmsi].polyline);
+                }
+            }
+        });
+        // 清空整个存储对象，重置状态
+        shipOverlays = {};
+    }
+
+    function clearSingleShipOverlays(mmsi) {
         if (shipOverlays[mmsi]) {
             shipOverlays[mmsi].markers.forEach(marker => map.removeOverlay(marker));
             if (shipOverlays[mmsi].polyline) {
@@ -126,6 +141,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function fetchAndDrawPath(mmsi, showAlert = false) {
+        clearAllShipOverlays(); // 清除所有船只的轨迹
+
         currentMmsi = mmsi; // 更新当前显示的MMSI
         if (!mmsi) {
             console.error("MMSI is required.");
@@ -133,8 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const { startTime, endTime, shouldDraw } = getCurrentTimeRange();
-        if (!shouldDraw) {
-            clearShipOverlays(mmsi);
+        if (!shouldDraw) {  //用户选择“不显示轨迹”时
             if (showAlert) alert("已清除轨迹显示。");
             return;
         }
@@ -149,7 +165,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (reports.length === 0) {
                 if (showAlert) alert("在选定时间段内没有符合要求的上报数据");
-                clearShipOverlays(mmsi);
                 return;
             }
 
@@ -168,8 +183,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                 }
             }
-
-            clearShipOverlays(mmsi);
             
             const bmapPoints = [];
             const newMarkers = [];

@@ -6,7 +6,7 @@ import redis
 from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .services import get_latest_report_by_sn
+from .services import get_latest_report_by_sn, get_latest_report_for_gis_by_sn
 from utils import gl_logger
 
 import asyncio
@@ -51,6 +51,7 @@ class DataConsumer(AsyncWebsocketConsumer):
         gl_logger.info(f"接收到前端消息: {text_data}")
         data = json.loads(text_data)
         message_type = data.get('type')
+        task = None
 
         # 使用 asyncio.create_task 在后台执行任务，避免阻塞 receive 方法
         if message_type == 'get_latest_report':

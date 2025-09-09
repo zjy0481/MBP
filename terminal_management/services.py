@@ -348,3 +348,31 @@ def get_reports_by_mmsi_and_time(mmsi, start_time, end_time):
 
     except Exception as e:
         return (False, f"根据MMSI和时间查询轨迹数据时发生错误: {e}")
+
+def get_latest_report_for_gis_by_sn(sn):
+    """
+    【为GIS页面新建】根据SN码获取最新的状态上报记录 (返回字典)。
+    此函数包含GIS实时更新所需的所有关联信息（MMSI, IP等）。
+    """
+    try:
+        terminal = TerminalInfo.objects.select_related('ship').get(sn=sn)
+        ship = terminal.ship
+
+        try:
+            latest_report = TerminalReport.objects.filter(sn=terminal).latest('report_date', 'report_time')
+            report_dict = latest_report.to_dict()
+        except TerminalReport.DoesNotExist:
+            report_dict = {}
+
+        # 无论有无上报，都附加必要的关联信息
+        report_dict['sn'] = terminal.sn
+        report_dict['ship_name'] = ship.ship_name
+        report_dict['mmsi'] = ship.mmsi
+        report_dict['ip_address'] = terminal.ip_address
+        report_dict['port_number'] = terminal.port_num
+        
+        return (True, report_dict)
+    except TerminalInfo.DoesNotExist:
+        return (False, f"SN为 '{sn}' 的端站不存在。")
+    except Exception as e:
+        return (False, f"为GIS查询最新上报记录时发生错误: {e}")

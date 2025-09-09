@@ -1,10 +1,10 @@
-document.addEventListener('DOMContentLoaded', function () {
+function onSocketReady() {
+    console.log("GIS.js: WebSocket is ready. Initializing page logic.");
     // -------------------------------------------------------------------
     // 全局变量和DOM元素获取
     // -------------------------------------------------------------------
     let map;
     let shipOverlays = {}; // 存储每艘船的覆盖物
-    let gisSocket = null;  // 用于WebSocket连接
     let currentMmsi = null; // 当前显示的船舶MMSI
 
     const sidebar = document.getElementById('gis-sidebar');
@@ -37,49 +37,30 @@ document.addEventListener('DOMContentLoaded', function () {
     // -------------------------------------------------------------------
     // WebSocket 功能
     // -------------------------------------------------------------------
-    function connectWebSocket() {
-        // 如果已有连接，并且连接正常，则无需重连
-        if (gisSocket && gisSocket.readyState < 2) {
-            return;
-        }
-
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        // **核心修正：连接到通用的 /ws/data/ 接口**
-        const wsUrl = `${wsProtocol}//${window.location.host}/ws/data/`;
-        
-        gisSocket = new WebSocket(wsUrl);
-
-        gisSocket.onopen = function(e) {
-            console.log(`WebSocket connection established to general data stream.`);
-        };
-
-        gisSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
+    const gisPageMessageHandler = function(message) {
+        // message 就是已经由 base.html 全局处理器 parse 好的 data 对象
+        console.log("这里是gis专用处理器，收到消息类型", message.type)
+        console.log("data:",message.data)
+        if (message.type === 'latest_report_data' && message.data) {
+            const report = message.data;
             
-            // 检查是否是状态上报消息
-            if (data.type === 'report_data' && data.message) {
-                const report = data.message;
-                
-                // **这里的逻辑不变：前端自行判断消息是否与当前船只相关**
-                if (report.mmsi !== currentMmsi) return;
-
-                const reportTime = new Date(`${report.report_date}T${report.report_time}`);
-                const { startTime, endTime } = getCurrentTimeRange();
-                if (reportTime >= startTime && reportTime <= endTime) {
-                    console.log("Received relevant live data, refreshing path...");
-                    fetchAndDrawPath(currentMmsi);
-                }
+            if (report.mmsi !== currentMmsi) {
+                return; // 消息与当前船只无关，直接返回
             }
-        };
 
-        gisSocket.onclose = function(e) {
-            console.log('WebSocket connection closed.');
-            gisSocket = null; // 清理变量
-        };
+            const reportTime = new Date(`${report.report_date}T${report.report_time}`);
+            const { startTime, endTime } = getCurrentTimeRange();
+            if (reportTime >= startTime && reportTime <= endTime) {
+                console.log("Received relevant live data, refreshing path...");
+                fetchAndDrawPath(currentMmsi);
+            }
+        }
+    };
 
-        gisSocket.onerror = function(e) {
-            console.error('WebSocket error:', e);
-        };
+    if (window.webSocketOnMessageHandlers) {
+        window.webSocketOnMessageHandlers = []; // 清空所有旧的处理器
+        window.webSocketOnMessageHandlers.push(gisPageMessageHandler); // 添加GIS页面专属的处理器
+        console.log("gis专用处理器已添加至ws全局队列")
     }
 
     // -------------------------------------------------------------------
@@ -141,6 +122,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function fetchAndDrawPath(mmsi, showAlert = false) {
+        console.log("正在刷新轨迹 MMSI:", mmsi);
         clearAllShipOverlays(); // 清除所有船只的轨迹
 
         currentMmsi = mmsi; // 更新当前显示的MMSI
@@ -167,9 +149,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (showAlert) alert("在选定时间段内没有符合要求的上报数据");
                 return;
             }
-
-            // 建立或确认通用数据流的WebSocket连接
-            connectWebSocket();
 
             const markersToDraw = [];
             if (reports.length > 0) {
@@ -303,4 +282,4 @@ document.addEventListener('DOMContentLoaded', function () {
             fetchAndDrawPath(defaultMmsi);
         }
     }
-});
+}

@@ -41,7 +41,7 @@ function onSocketReady() {
         // message 就是已经由 base.html 全局处理器 parse 好的 data 对象
         console.log("这里是gis专用处理器，收到消息类型", message.type)
         console.log("data:",message.data)
-        if (message.type === 'latest_report_data' && message.data) {
+        if (message.type === 'gis_update_data' && message.data) {
             const report = message.data;
             
             if (report.mmsi !== currentMmsi) {

@@ -257,10 +257,34 @@ class DataConsumer(AsyncWebsocketConsumer):
 
     # 从 channel layer 接收广播消息并推送给前端
     async def send_update(self, event):
-        message = event['message']
-        gl_logger.info(f"正在向前端发送广播更新: {json.dumps(message)}")
-        # 使用与 send_to_client 相同的 `{'message': ...}` 包装器
-        await self.send(text_data=json.dumps({'message': message}))
+        """
+        接收来自signals的广播。
+        1. 转发旧格式消息给 antenna 等页面。
+        2. 获取并发送新格式的GIS专属消息。
+        """
+        original_message = event['message']
+        sn = original_message.get('sn')
+        if not sn:
+            return
+
+        # 1. 转发与之前完全兼容的消息，供 antenna 等页面使用
+        gl_logger.info(f"正在向旧版页面发送广播更新: {json.dumps(original_message)}")
+        await self.send(text_data=json.dumps({'message': original_message}))
+
+        # 2. 调用为GIS准备的service函数，获取包含MMSI等信息的丰富字典
+        success, gis_report_dict = await database_sync_to_async(get_latest_report_for_gis_by_sn)(sn)
+        
+        if success:
+            # 构造GIS专属的新消息
+            message_for_gis = {
+                'type': 'gis_update_data', # 使用新的、专属的类型
+                'data': gis_report_dict
+            }
+            gl_logger.info(f"正在向GIS页面发送专属广播更新: {json.dumps({'message': message_for_gis})}")
+            # 直接发送，不经过 send_to_client 的额外包装
+            await self.send(text_data=json.dumps({'message': message_for_gis}))
+        else:
+            gl_logger.warning(f"send_update 中为GIS获取数据失败 (SN: {sn}): {gis_report_dict}")
 
     async def udp_message(self, event):
         await self.channel_layer.send(event['reply_channel'], {

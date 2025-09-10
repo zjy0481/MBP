@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from .models import ShipInfo, TerminalInfo, BaseStationInfo, TerminalReport
 from django.db.models import Q
 from django.utils import timezone
+from utils import gl_logger
 
 # -----------------------------------------------------------------------------
 # 统一的返回格式说明
@@ -357,19 +358,29 @@ def get_latest_report_for_gis_by_sn(sn):
     try:
         terminal = TerminalInfo.objects.select_related('ship').get(sn=sn)
         ship = terminal.ship
+        report_dict = {}
 
         try:
-            latest_report = TerminalReport.objects.filter(sn=terminal).latest('report_date', 'report_time')
-            report_dict = latest_report.to_dict()
+            latest_report = TerminalReport.objects.filter(sn=sn).order_by('-report_date', '-report_time').first()
+            # 遍历模型的所有字段，将它们添加到字典中
+            for field in latest_report._meta.fields:
+                report_dict[field.name] = str(getattr(latest_report, field.name))
+
+            # 外键 sn 需要的是字符串值，而不是对象
+            # report_dict['sn'] = latest_report.sn.sn 
+
         except TerminalReport.DoesNotExist:
-            report_dict = {}
+            gl_logger.info(f"端站 (SN: {sn}) 暂无上报数据，GIS更新将只包含基本信息。")
 
         # 无论有无上报，都附加必要的关联信息
-        report_dict['sn'] = terminal.sn
+        # report_dict['sn'] = terminal.sn
         report_dict['ship_name'] = ship.ship_name
         report_dict['mmsi'] = ship.mmsi
         report_dict['ip_address'] = terminal.ip_address
-        report_dict['port_number'] = terminal.port_num
+        report_dict['port_number'] = terminal.port_number
+
+        if 'sn' not in report_dict:
+            report_dict['sn'] = terminal.sn
         
         return (True, report_dict)
     except TerminalInfo.DoesNotExist:

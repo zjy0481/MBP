@@ -2,9 +2,56 @@
 
 **该文档中所有讯息均为json串**
 
-**所有服务端下发请求和端站应答均应当包含request_id字段（uuid），用于实现请求和响应的一一匹配，下文中所有消息省略该字段，不做重复说明**
+### 一、端站上报信息
 
-### 端站数据与控制
+当端站进行状态上报时（`op`为`"report"`，`op_sub`为`"state"`），其发送的JSON载荷包含以下字段。
+
+| 字段名                    | 字段类型 | 字段内容示例             | 备注 (verbose_name, 约束)                                    |
+| ------------------------- | -------- | ------------------------ | ------------------------------------------------------------ |
+| **type**                  | String   | `"MBP-N28 船载伺服基站"` | 设备类型名。**不可为空**。与sn, report_date, report_time构成复合唯一约束。 |
+| **sn**                    | String   | `"sn000004"`             | 设备序列号。**不可为空**。                                   |
+| **report_date**           | Date     | `"2025-09-11"`           | 上报日期 (格式: YYYY-MM-DD)。**不可为空**。                  |
+| **report_time**           | Time     | `"00:50:53"`             | 上报时间 (格式: HH:MM:SS)。**不可为空**。                    |
+| **op**                    | String   | `"report"`               | 操作类型。                                                   |
+| **op_sub**                | String   | `"state"`                | 操作子类。                                                   |
+| **system_stat**           | Integer  | `0`                      | 系统状态。可为空。                                           |
+| **wireless_network_stat** | Integer  | `0`                      | 无线网络状态。可为空。                                       |
+| **long**                  | Float    | `0.5`                    | 端站经度。可为空。                                           |
+| **lat**                   | Float    | `0.5`                    | 端站纬度。可为空。                                           |
+| **theory_yaw**            | Float    | `0.0`                    | 理论方位角。可为空。                                         |
+| **yaw**                   | Float    | `270.0`                  | 当前方位角。可为空。                                         |
+| **pitch**                 | Float    | `0.4000000059604645`     | 当前俯仰角。可为空。                                         |
+| **roll**                  | Float    | `-1.5`                   | 当前横滚角。可为空。                                         |
+| **yao_limit_state**       | Float    | `0`                      | 方位限位。可为空。                                           |
+| **temp**                  | Float    | `0.0`                    | 温度(°C)。可为空。                                           |
+| **humi**                  | Float    | `0.0`                    | 湿度(%)。可为空。                                            |
+| **bts_name**              | String   | `"2号基站"`              | 基站名。可为空。                                             |
+| **bts_long**              | Float    | `0.0`                    | 基站经度。可为空。                                           |
+| **bts_lat**               | Float    | `0.0`                    | 基站纬度。可为空。                                           |
+| **bts_number**            | Integer  | `2`                      | 基站编号。可为空。                                           |
+| **bts_group_number**      | Integer  | `1`                      | 基站分区号。可为空。                                         |
+| **bts_r**                 | Float    | `60.0`                   | 基站覆盖半径(公里)。可为空。                                 |
+| **upstream_rate**         | Float    | `0`                      | 上行速率(Mbps)。可为空。                                     |
+| **downstream_rate**       | Float    | `0`                      | 下行速率(Mbps)。可为空。                                     |
+| **standard**              | String   | `"NR"`                   | 通信制式。可为空。                                           |
+| **plmn**                  | String   | `"46011"`                | 运营商PLMN。可为空。                                         |
+| **cellid**                | String   | `"0"`                    | 服务小区CellID。可为空。                                     |
+| **pci**                   | Integer  | `219`                    | 服务小区PCI。可为空。                                        |
+| **rsrp**                  | Float    | `-92`                    | RSRP(信号接收功率)。可为空。                                 |
+| **sinr**                  | Float    | `13`                     | SINR(信噪比)。可为空。                                       |
+| **rssi**                  | Float    | `null`                   | RSSI(信号强度指示)。可为空。                                 |
+
+端站上报消息示例：
+
+```json
+{"type": "MBP-N28 \u8239\u8f7d\u4f3a\u670d\u57fa\u7ad9", "sn": "sn000004", "op": "report", "op_sub": "state", "date": "2025-09-11", "time": "00:50:53", "system_stat": 0, "wireless_network_stat": 0, "long": 0.5, "lat": 0.5, "theory_yaw": 0.0, "yaw": 270.0, "pitch": 0.4000000059604645, "roll": -1.5, "yao_limit_state": 0, "temp": 0.0, "humi": 0.0, "bts_name": "2号基站", "bts_long": 0.0, "bts_lat": 0.0, "bts_no": 2, "bts_group_no": 1, "bts_r": 60.0,  "upstream_rate": 0, "downstream_rate": 0, "standard": "NR", "plmn": 46011, "cellid": 0, "pci": 219, "rsrp": -92, "sinr": 13, "rssi": "N/A"}
+```
+
+
+
+**以下所有服务端下发请求和端站应答均应当包含request_id字段（uuid），用于实现请求和响应的一一匹配，下文中所有消息省略该字段，不做重复说明**
+
+### 二、端站数据与控制
 
 #### 1、查询工作模式
 
@@ -106,7 +153,7 @@
 
 
 
-### 端站系统管理
+### 三、端站系统管理
 
 #### 1、查询工作模式
 

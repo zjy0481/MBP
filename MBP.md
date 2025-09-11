@@ -23,7 +23,6 @@ MBP-dev/
 ├── MBP.md                   # Markdown 文件，可能是项目的主要文档或说明。
 ├── MBP通信协议.md           # Markdown 文件，详细描述了项目所使用的通信协议。
 ├── manage.py                # Django 项目的命令行工具，用于执行项目管理任务（如运行服务器、数据库迁移等）。
-├── test_req_res.py          # 一个 Python 脚本，用于测试请求和响应，可能是用于 API 或网络服务的测试。
 │
 ├── acu/                     # "Application Control Unit" (应用控制单元) 的缩写，一个独立的 Python 包。
 │   └── NM_Service.py        # 网络管理服务 (Network Management Service)，处理与网络相关的任务。
@@ -38,17 +37,20 @@ MBP-dev/
 │   ├── js/                  # 存放 JavaScript 文件。
 │       ├── antenna.js       # 与天线页面 (antenna.html) 相关的 JavaScript 代码。
 │       ├── interactive_page_base.js # 交互式页面的基础 JavaScript 文件。
-│       └── systemmanage.js  # 与系统管理页面 (systemmanage.html) 相关的 JavaScript 代码。
+│       ├── systemmanage.js  # 与系统管理页面 (systemmanage.html) 相关的 JavaScript 代码。
+│       └── gis.js           # 与船舶信息地图页面(gis.html)相关的 JavaScript 代码。
 │   └── images/              # 存放图片素材。
 │       └── direction.png  	 # gis素材
 │
 ├── templates/               # 存放 HTML 模板文件的目录。
 │   ├── _base_interactive_page.html # 交互式页面的基础模板。
+│   ├── _base_gis_page.html	 # GIS地图基础模板
 │   ├── antenna.html         # 天线信息展示页面。
 │   ├── base.html            # 所有页面继承的基础模板文件。
 │   ├── base_station_form.html # 用于创建或编辑基站信息的表单页面。
 │   ├── base_station_list.html # 展示基站列表的页面。
 │   ├── data_confirm_delete.html # 删除数据前的确认页面。
+│   ├── gis.html             # GIS地图的主页面。
 │   ├── home.html            # 项目的主页或仪表盘。
 │   ├── login.html           # 用户登录页面。
 │   ├── logout.html          # 用户登出页面。
@@ -234,36 +236,108 @@ graph TD
 
 ## 6. 项目运行与部署
 
-### 6.1. 环境依赖
+### 6.1. 基础环境依赖
 
-- Python, Django, Channels, channels_redis, daphne
-- MySQL 数据库
-- Redis 服务器
+在开始之前，请确保您的系统中已安装以下软件：
 
+- Python (3.10 或更高版本)
+- Git
+- Redis (作为Django Channels的消息代理)
 
+### 6.2 项目设置
 
-### 6.2. 运行项目
+1. **克隆代码仓库**
+
+   ```
+   git clone <repository_url>
+   cd MBP-dev
+   ```
+   
+2. **创建并激活Python虚拟环境**
+
+   - Windows:
+
+     ```
+     python -m venv venv
+     .\venv\Scripts\activate
+     ```
+     
+   - macOS / Linux:
+
+     ```
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+   
+3. **安装项目依赖**
+
+   > 本项目配备有requirements.txt，建议直接通过以下命令安装
+
+   ```
+   pip install -r requirements.txt
+   ```
+
+### 6.3 数据库配置
+
+本项目使用 **MySQL** 作为后端数据库。请按照以下步骤进行配置。
+
+2.  **创建数据库**
+    登录您的MySQL服务器，创建一个新的数据库供本项目使用。请务必使用`utf8mb4`字符集以支持完整的Unicode字符。
+    ```sql
+    CREATE DATABASE mbp_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    ```
+
+3.  **配置 Django 设置**
+    打开项目配置文件 `mbp_project/settings.py`，找到`DATABASES`部分，并根据您的MySQL服务器信息修改以下字段：
+    ```python
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'mbp_db',        # 您在上一步创建的数据库名
+            'USER': 'your_mysql_user',  # 您的MySQL用户名
+            'PASSWORD': 'your_mysql_password', # 您的MySQL密码
+            'HOST': '127.0.0.1',      # 数据库服务器地址，本地通常是 127.0.0.1
+            'PORT': '3306',           # 数据库端口号，默认是 3306
+        }
+    }
+    ```
+
+4.  **执行数据库迁移**
+    保存`settings.py`文件后，回到终端运行以下命令，Django 将会自动在您的MySQL数据库中创建所有需要的表：
+    ```bash
+    python manage.py migrate
+    ```
+
+5.  **创建超级管理员用户**
+    为了登录后台管理系统和Web应用，您需要创建一个管理员账户：
+    ```bash
+    python manage.py createsuperuser
+    ```
+    按照提示输入用户名、邮箱和密码。
+
+### 6.4. 运行项目
 
 本项目包含两个需要独立启动的服务进程。请**务必**打开两个终端窗口。
 
+0. **启动Redis服务** 
+
+   请确保您的Redis服务器正在运行。如果您是通过包管理器（如apt, brew）或Docker安装的，它可能已作为后台服务启动。否则，请手动启动它。
+
 1. **终端 1: 启动UDP服务**
 
-   Bash
-
+   ```bash
+python manage.py start_nm_service
    ```
-   python manage.py start_nm_service
-   ```
-
+   
    该服务会持续在后台运行，处理所有UDP和Redis指令。
 
 2. **终端 2: 启动Web服务器**
 
    由于项目使用了Channels，不能使用 runserver。必须使用ASGI服务器：
 
-   Bash
-
-   ```
+   ```bash
    daphne -p 8000 mbp_project.asgi:application
    ```
-
+   
    服务器将在 `8000` 端口上运行，处理所有HTTP和WebSocket请求。
+

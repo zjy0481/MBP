@@ -209,7 +209,7 @@ graph TD
 
   JSON
 
-  ```
+  ```json
   {
       "sn": "SN000001",
       "op": "query",
@@ -222,7 +222,7 @@ graph TD
 
   JSON
 
-  ```
+  ```json
   {
       "sn": "SN000001",
       "op": "query_ans",
@@ -248,7 +248,7 @@ graph TD
 
 1. **克隆代码仓库**
 
-   ```
+   ```bash
    git clone <repository_url>
    cd MBP-dev
    ```
@@ -257,14 +257,14 @@ graph TD
 
    - Windows:
 
-     ```
+     ```bash
      python -m venv venv
      .\venv\Scripts\activate
      ```
      
    - macOS / Linux:
 
-     ```
+     ```bash
      python3 -m venv venv
      source venv/bin/activate
      ```
@@ -273,7 +273,7 @@ graph TD
 
    > 本项目配备有requirements.txt，建议直接通过以下命令安装
 
-   ```
+   ```bash
    pip install -r requirements.txt
    ```
 
@@ -289,6 +289,7 @@ graph TD
 
 3.  **配置 Django 设置**
     打开项目配置文件 `mbp_project/settings.py`，找到`DATABASES`部分，并根据您的MySQL服务器信息修改以下字段：
+    
     ```python
     DATABASES = {
         'default': {
@@ -301,15 +302,22 @@ graph TD
         }
     }
     ```
-
+    
+    此外，如果您不是将项目部署在本地，则还需要修改配置文件 `mbp_project/settings.py`中的`ALLOWED_HOSTS`部分，请您根据您的ip进行修改：
+    ```python
+    ALLOWED_HOSTS = ["your_ip"]
+    ```
+    
 4.  **执行数据库迁移**
     保存`settings.py`文件后，回到终端运行以下命令，Django 将会自动在您的MySQL数据库中创建所有需要的表：
+    
     ```bash
     python manage.py migrate
     ```
-
+    
 5.  **创建超级管理员用户**
     为了登录后台管理系统和Web应用，您需要创建一个管理员账户：
+    
     ```bash
     python manage.py createsuperuser
     ```
@@ -336,8 +344,8 @@ python manage.py start_nm_service
    由于项目使用了Channels，不能使用 runserver。必须使用ASGI服务器：
 
    ```bash
-   daphne -p 8000 mbp_project.asgi:application
+   daphne -b your_ip -p your_port mbp_project.asgi:application
    ```
    
-   服务器将在 `8000` 端口上运行，处理所有HTTP和WebSocket请求。
+   服务器将在 `your_ip:your_port` 端口上运行，处理所有HTTP和WebSocket请求。
 

@@ -13,3 +13,5 @@ mysqlclient
 
 # Redis client
 redis
+
+colorlog

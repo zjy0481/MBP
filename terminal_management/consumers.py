@@ -78,6 +78,7 @@ class DataConsumer(AsyncWebsocketConsumer):
             # 使用 database_sync_to_async 将同步的数据库操作转换为异步可调用对象
             db_query = database_sync_to_async(get_latest_report_by_sn)
             success, report = await db_query(sn=sn)
+            gl_logger.info(f"handle_get_latest_report: 查询到状态 {str(getattr(report, "system_stat"))}, {str(getattr(report, "wireless_network_stat"))}")
 
             response_data = None
             if success and report:
@@ -262,14 +263,31 @@ class DataConsumer(AsyncWebsocketConsumer):
         1. 转发旧格式消息给 antenna 等页面。
         2. 获取并发送新格式的GIS专属消息。
         """
+
         original_message = event['message']
         sn = original_message.get('sn')
         if not sn:
             return
-
+        
         # 1. 转发与之前完全兼容的消息，供 antenna 等页面使用
-        gl_logger.info(f"正在向旧版页面发送广播更新: {json.dumps(original_message)}")
+        success, antenna_report = await database_sync_to_async(get_latest_report_by_sn)(sn=sn)
+        antenna_report_dict = {}
+        for field in antenna_report._meta.fields:
+            antenna_report_dict[field.name] = str(getattr(antenna_report, field.name))
+            
         await self.send(text_data=json.dumps({'message': original_message}))
+        if success:
+            # 构造antenna专属的新消息
+            message_for_antenna = {
+                'type': 'latest_report_data', # 使用新的、专属的类型
+                'data': antenna_report_dict
+            }
+            gl_logger.info(f"正在向antenna页面发送广播更新: {json.dumps({'message': message_for_antenna})}")
+            # 直接发送，不经过 send_to_client 的额外包装
+            await self.send(text_data=json.dumps({'message': message_for_antenna}))
+        else:
+            gl_logger.warning(f"send_update 中为GIS获取数据失败 (SN: {sn}): {antenna_report_dict}")
+
 
         # 2. 调用为GIS准备的service函数，获取包含MMSI等信息的丰富字典
         success, gis_report_dict = await database_sync_to_async(get_latest_report_for_gis_by_sn)(sn)

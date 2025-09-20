@@ -142,6 +142,7 @@ def terminal_report_handler(sender, instance, **kwargs):
         'downstream_rate': instance.downstream_rate, 'standard': instance.standard,
         'plmn': instance.plmn, 'cellid': instance.cellid, 'pci': instance.pci,
         'rsrp': instance.rsrp, 'sinr': instance.sinr, 'rssi': instance.rssi,
+        'system_stat': instance.system_stat, "wireless_network_stat": instance.wireless_network_stat,
     }
 
     # 封装成前端可识别的格式

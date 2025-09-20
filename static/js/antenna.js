@@ -186,24 +186,52 @@ function onTurn(axis, direct) {
 }
 
 function updatePageData(report) {
+    // 在开始刷新前将所有栏目设为“暂无数据”或空
+    setSystemStatus(-1);
+    setLinkStatus(-1);
+    document.getElementById("bts_name").value = "";
+    document.getElementById("bts_no").value =  "";
+    document.getElementById("bts_longitude").value = "";
+    document.getElementById("bts_latitude").value = "";
+    document.getElementById("longitude").value = "";
+    document.getElementById("latitude").value = "";
+    document.getElementById("theory_yaw").value = "";
+    document.getElementById("yaw").value = "";
+    document.getElementById("pitch").value = "";
+    document.getElementById("roll").value = "";
+    setYawLimit(-1);
+    document.getElementById("temperature").value = "";
+    document.getElementById("humidity").value = "";
+    showLinkspeed({ upstream: '', downstream: '' });
+    showNetworkState({
+        plmn: 0, standard: '', cellid: '',
+        pci: '', rsrp: '', rssi: '', sinr: ''
+    });
+    console.log("清理页面完成");
+
+    console.log("report如下", report);
     if (report.report_date && report.report_time) {
         document.getElementById('selected_last_report').innerText = `${report.report_date} ${report.report_time}`;
     }
-    setSystemStatus(parseInt(report.system_stat, 10));
-    setLinkStatus(parseInt(report.wireless_network_stat, 10));
-    document.getElementById("bts_name").value = report.bts_name || "N/A";
-    document.getElementById("bts_no").value = report.bts_number || "N/A";
-    document.getElementById("bts_longitude").value = parseFloat(report.bts_long)?.toFixed(3) || "N/A";
-    document.getElementById("bts_latitude").value = parseFloat(report.bts_lat)?.toFixed(3) || "N/A";
-    document.getElementById("longitude").value = parseFloat(report.long)?.toFixed(3) || "N/A";
-    document.getElementById("latitude").value = parseFloat(report.lat)?.toFixed(3) || "N/A";
-    document.getElementById("theory_yaw").value = parseFloat(report.theory_yaw)?.toFixed(2) || "N/A";
-    document.getElementById("yaw").value = parseFloat(report.yaw)?.toFixed(2) || "N/A";
-    document.getElementById("pitch").value = parseFloat(report.pitch)?.toFixed(2) || "N/A";
-    document.getElementById("roll").value = parseFloat(report.roll)?.toFixed(2) || "N/A";
+    console.log("系统状态、无线网络状态:",report.system_stat,", ",report.wireless_network_stat);
+    let system_state = parseInt(report.system_stat, 10);
+    let wireless_network_state = parseInt(report.wireless_network_stat, 10);
+    setSystemStatus(system_state);
+    setLinkStatus(wireless_network_state);
+    console.log("转换后的系统状态、无线网络状态:",report.system_stat,", ",report.wireless_network_stat);
+    document.getElementById("bts_name").value = report.bts_name || "";
+    document.getElementById("bts_no").value = report.bts_number || "";
+    document.getElementById("bts_longitude").value = parseFloat(report.bts_long)?.toFixed(3) || "";
+    document.getElementById("bts_latitude").value = parseFloat(report.bts_lat)?.toFixed(3) || "";
+    document.getElementById("longitude").value = parseFloat(report.long)?.toFixed(3) || "";
+    document.getElementById("latitude").value = parseFloat(report.lat)?.toFixed(3) || "";
+    document.getElementById("theory_yaw").value = parseFloat(report.theory_yaw)?.toFixed(2) || "";
+    document.getElementById("yaw").value = parseFloat(report.yaw)?.toFixed(2) || "";
+    document.getElementById("pitch").value = parseFloat(report.pitch)?.toFixed(2) || "";
+    document.getElementById("roll").value = parseFloat(report.roll)?.toFixed(2) || "";
     setYawLimit(parseInt(report.yao_limit_state, 10));
-    document.getElementById("temperature").value = parseFloat(report.temp)?.toFixed(2) || "N/A";
-    document.getElementById("humidity").value = parseFloat(report.humi)?.toFixed(2) || "N/A";
+    document.getElementById("temperature").value = parseFloat(report.temp)?.toFixed(2) || "";
+    document.getElementById("humidity").value = parseFloat(report.humi)?.toFixed(2) || "";
     showLinkspeed({ upstream: report.upstream_rate, downstream: report.downstream_rate });
     showNetworkState({
         plmn: report.plmn, standard: report.standard, cellid: report.cellid,
@@ -223,6 +251,7 @@ function setSystemStatus(status) {
         case 2: document.getElementById("light_presearch").style.backgroundColor = "limegreen"; break;
         case 3: document.getElementById("light_track").style.backgroundColor = "limegreen"; break;
         case 4: document.getElementById("light_fault").style.backgroundColor = "red"; break;
+        default: 
     }
 }
 
@@ -234,6 +263,7 @@ function setLinkStatus(status) {
         case 0: document.getElementById("dtu_unlink").style.backgroundColor = "red"; break;
         case 1: document.getElementById("dtu_state_dial").style.backgroundColor = "limegreen"; break;
         case 2: document.getElementById("dtu_state_normal").style.backgroundColor = "limegreen"; break;
+        default: 
     }
 }
 
@@ -244,7 +274,7 @@ function setYawLimit(state) {
         case 0: node.value = "无接触"; break;
         case 1: node.value = "左限位"; break;
         case 2: node.value = "右限位"; break;
-        default: node.value = "N/A"; break;
+        default: node.value = ""; break;
     }
 }
 
@@ -262,14 +292,14 @@ function showNetworkState(param) {
         case 46001: case 46006: case 46009: case 46010: plmnNode.value = "中国联通"; break;
         case 46003: case 46005: case 46011: case 46012: plmnNode.value = "中国电信"; break;
         case 46015: plmnNode.value = "中国广电"; break;
-        default: plmnNode.value = param.plmn ? "未知运营商" : "N/A"; break;
+        default: plmnNode.value = param.plmn ? "未知运营商" : ""; break;
     }
-    document.getElementById("dtu_standard").value = param.standard || 'N/A';
-    document.getElementById("dtu_cellid").value = param.cellid || 'N/A';
-    document.getElementById("dtu_pci").value = param.pci || 'N/A';
-    document.getElementById("dtu_rsrp").value = param.rsrp || 'N/A';
-    document.getElementById("dtu_rssi").value = param.rssi || 'N/A';
-    document.getElementById("dtu_sinr").value = param.sinr || 'N/A';
+    document.getElementById("dtu_standard").value = param.standard || '';
+    document.getElementById("dtu_cellid").value = param.cellid || '';
+    document.getElementById("dtu_pci").value = param.pci || '';
+    document.getElementById("dtu_rsrp").value = param.rsrp || '';
+    document.getElementById("dtu_rssi").value = param.rssi || '';
+    document.getElementById("dtu_sinr").value = param.sinr || '';
 
     // rsrp转换与换算
     const rsrpValue = document.getElementById("rsrp_value");

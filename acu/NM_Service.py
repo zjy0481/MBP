@@ -46,8 +46,8 @@ JSON_TO_MODEL_MAP = {
     'op_sub': 'op_sub',
 
     # 端站状态信息 (Terminal Status)
-    'system_stat': 'system_stat',
-    'wireless_network_stat': 'wireless_network_stat',
+    'system_state': 'system_stat',
+    'wireless_network_state': 'wireless_network_stat',
     'long': 'long',
     'lat': 'lat',
     'theory_yaw': 'theory_yaw',
@@ -85,7 +85,7 @@ class NM_Service():
     def __init__(self):
         self.__udp_socket = None
         # 绑定端口
-        self.__udp_addr = ("127.0.0.1", 58888)
+        self.__udp_addr = ("127.0.0.1", 59999)
 
         # UDP 的消息循环，负责监听UDP消息，接收后打包成事件发出
         self.__udp_loop_active = False

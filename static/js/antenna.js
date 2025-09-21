@@ -37,12 +37,14 @@ function onSocketReady() {
             // 实时更新逻辑
             if (report && report.sn === selectedSn) {
                 console.log(`收到当前选中端站 [${selectedSn}] 的实时数据，正在更新页面...`);
+                cleanPageData();
                 updatePageData(report);
             } 
             // 手动查询后没有数据的处理逻辑
             else if (!report && message.sn === selectedSn) {
                 document.getElementById('selected_last_report').innerText = '暂无上报数据';
                 alert(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
+                cleanPageData();
             }
             
         } else if (message.type === 'control_response') {
@@ -185,8 +187,8 @@ function onTurn(axis, direct) {
     });
 }
 
-function updatePageData(report) {
-    // 在开始刷新前将所有栏目设为“暂无数据”或空
+function cleanPageData() {
+    // 将所有栏目设为空
     setSystemStatus(-1);
     setLinkStatus(-1);
     document.getElementById("bts_name").value = "";
@@ -208,7 +210,9 @@ function updatePageData(report) {
         pci: '', rsrp: '', rssi: '', sinr: ''
     });
     console.log("清理页面完成");
+}
 
+function updatePageData(report) {
     console.log("report如下", report);
     if (report.report_date && report.report_time) {
         document.getElementById('selected_last_report').innerText = `${report.report_date} ${report.report_time}`;

@@ -23,6 +23,7 @@ function onSocketReady() {
         const workModeStatus = document.getElementById('work_mode_status');
         workModeStatus.innerText = '当前模式：暂无数据';
         workModeStatus.className = 'form-text mt-2';
+        cleanPageData();
         
         // 发起数据请求
         fetchLatestReport(selectedSn);
@@ -31,20 +32,20 @@ function onSocketReady() {
     // --- WebSocket消息处理 ---
     // 定义 antenna.html 专属的 WebSocket 消息处理器
     const antennaPageMessageHandler = function(message) {
+        console.log(message.type);
         if (message.type === 'latest_report_data') {
             const report = message.data;
             
             // 实时更新逻辑
+            cleanPageData();
             if (report && report.sn === selectedSn) {
                 console.log(`收到当前选中端站 [${selectedSn}] 的实时数据，正在更新页面...`);
-                cleanPageData();
                 updatePageData(report);
             } 
             // 手动查询后没有数据的处理逻辑
             else if (!report && message.sn === selectedSn) {
                 document.getElementById('selected_last_report').innerText = '暂无上报数据';
                 alert(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
-                cleanPageData();
             }
             
         } else if (message.type === 'control_response') {
@@ -306,10 +307,15 @@ function showNetworkState(param) {
     document.getElementById("dtu_sinr").value = param.sinr || '';
 
     // rsrp转换与换算
-    const rsrpValue = document.getElementById("rsrp_value");
-    const rsrpMeter = document.getElementById("rsrp_meter");
-    rsrpValue.innerHTML = `<h1>${param.rsrp || '?'} dBm</h1>`;
-    rsrpMeter.value = param.rsrp ? parseFloat(param.rsrp) + 150 : 0;
+    if (param.rsrp){
+        const rsrpValue = document.getElementById("rsrp_value");
+        const rsrpMeter = document.getElementById("rsrp_meter");
+        rsrpValue.innerHTML = `<h1>${param.rsrp || '?'} dBm</h1>`;
+        rsrpMeter.value = param.rsrp ? parseFloat(param.rsrp) + 150 : 0;
+    }
+    else{
+        console.warning("上报中的rsrp数据为空！")
+    }
 }
 
 function setLight(id, status) {

@@ -78,7 +78,7 @@ class DataConsumer(AsyncWebsocketConsumer):
             # 使用 database_sync_to_async 将同步的数据库操作转换为异步可调用对象
             db_query = database_sync_to_async(get_latest_report_by_sn)
             success, report = await db_query(sn=sn)
-            gl_logger.info(f"handle_get_latest_report: 查询到状态 {str(getattr(report, "system_stat"))}, {str(getattr(report, "wireless_network_stat"))}")
+            # gl_logger.info(f"handle_get_latest_report: 查询到状态 {str(getattr(report, "system_stat"))}, {str(getattr(report, "wireless_network_stat"))}")
 
             response_data = None
             if success and report:

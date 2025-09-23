@@ -105,15 +105,21 @@ function onSocketReady() {
         // const convertedPoint = wgs84ToBd09(report.long, report.lat);
         // 显示标签的long、lat为数据库中存储的long、lat，不做转换
         const content = `
-            <div style="padding: 5px; background: white; border: 1px solid gray; font-size: 12px; white-space: nowrap;">
-                <strong>时间:</strong> ${report.report_date} ${report.report_time}<br>
-                <strong>经纬度:</strong> ${report.long.toFixed(6)}, ${report.lat.toFixed(6)}<br>
-                <strong>方位角:</strong> ${report.yaw}°<br>
-                <strong>船舶名称:</strong> ${report.ship_name}<br>
-                <strong>MMSI:</strong> ${report.mmsi}<br>
-                <strong>船东:</strong> ${report.ship_owner || 'N/A'}<br>
-                <strong>端站SN:</strong> ${report.sn}<br>
-                <strong>基站名称:</strong> ${report.bts_name || 'N/A'}
+            <div class = "map-marker-label">
+                <strong>${report.sn}</strong> <br>
+
+                经纬度: ${report.long.toFixed(6)}, ${report.lat.toFixed(6)}
+                方位角: ${report.yaw}°<br>
+
+                基站名称: ${report.bts_name || 'N/A'}<br>
+
+                通信制式: ${report.standard || 'N/A'}, 
+                pci: ${report.pci || 'N/A'}, 
+                rsrp: ${report.rsrp || 'N/A'}, 
+                sinr: ${report.sinr || 'N/A'}, 
+                rssi: ${report.rssi || 'N/A'} <br>
+
+                时间: ${report.report_date} ${report.report_time}
             </div>
         `;
         const label = new BMap.Label(content, {

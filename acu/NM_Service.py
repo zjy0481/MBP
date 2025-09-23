@@ -264,9 +264,15 @@ class NM_Service():
             # 检查操作类型，处理 'report' 类型的消息
             op = msg_dict.get('op')
             op_sub = msg_dict.get('op_sub')
+            long = msg_dict.get('long')
+            lat = msg_dict.get('lat')
 
             if op == 'report':
                 gl_logger.info("正在处理上报消息...")
+
+                if (long == 0.0 and lat == 0.0):
+                    gl_logger.warning(f"已忽略 long={long}, lat={lat} 的消息（异常的地理坐标）。")
+                    return
 
                 model_data = {}
                 _sentinel = object()

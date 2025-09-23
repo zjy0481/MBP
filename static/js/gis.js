@@ -281,7 +281,7 @@ function onSocketReady() {
         const activeShip = document.querySelector('#ship-list-container .list-group-item.active');
         if (!activeShip) { alert("请先从左侧列表选择一艘船。"); return; }
         const distVal = parseInt(distanceInput.value, 10);
-        if (isNaN(distVal) || distVal < 100 || distVal > 10000) { alert("请输入100~10000之间的任意整数作为最小距离。"); return; }
+        if (isNaN(distVal) || distVal < 100 || distVal > 50000) { alert("请输入100~50000之间的任意整数作为最小距离。"); return; }
         const mmsi = activeShip.dataset.mmsi;
         if (!mmsi) { alert("发生了一个内部错误，无法识别当前船只。"); return; }
         // console.log("handleConfirmClick调用fetchAndDrawPath");

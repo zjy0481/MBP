@@ -350,7 +350,7 @@ def get_ship_track(request):
 
     # 步骤 3: 序列化数据，不再进行错误的跨表查询
     track_data = list(reports_or_error.values(
-        'sn', 'report_date', 'report_time', 'long', 'lat', 'yaw', 'bts_name'
+        'sn', 'report_date', 'report_time', 'long', 'lat', 'yaw', 'bts_name', 'standard', 'pci', 'rsrp', 'sinr', 'rssi'
     ))
 
     # 步骤 4: 手动附加船舶信息并格式化时间

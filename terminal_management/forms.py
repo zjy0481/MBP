@@ -58,7 +58,7 @@ class TerminalInfoForm(forms.ModelForm):
             'port_number': forms.NumberInput(attrs={'class': 'form-control'}),
         }
         help_texts = {
-            'sn': '端站的唯一标识符，不可修改。',
+            'sn': '端站的唯一标识符，严格区分大小写，后续不可修改。',
         }
 
     def clean_sn(self):

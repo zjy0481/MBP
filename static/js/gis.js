@@ -52,6 +52,7 @@ function onSocketReady() {
             const { startTime, endTime } = getCurrentTimeRange();
             if (reportTime >= startTime && reportTime <= endTime) {
                 console.log("Received relevant live data, refreshing path...");
+                // console.log("websocket动态更新调用fetchAndDrawPath");
                 fetchAndDrawPath(currentMmsi);
             }
         }
@@ -101,11 +102,12 @@ function onSocketReady() {
     }
 
     function createMarkerLabel(report) {
-        const convertedPoint = wgs84ToBd09(report.long, report.lat);
+        // const convertedPoint = wgs84ToBd09(report.long, report.lat);
+        // 显示标签的long、lat为数据库中存储的long、lat，不做转换
         const content = `
             <div style="padding: 5px; background: white; border: 1px solid gray; font-size: 12px; white-space: nowrap;">
                 <strong>时间:</strong> ${report.report_date} ${report.report_time}<br>
-                <strong>经纬度:</strong> ${convertedPoint.lng.toFixed(6)}, ${convertedPoint.lat.toFixed(6)}<br>
+                <strong>经纬度:</strong> ${report.long.toFixed(6)}, ${report.lat.toFixed(6)}<br>
                 <strong>方位角:</strong> ${report.yaw}°<br>
                 <strong>船舶名称:</strong> ${report.ship_name}<br>
                 <strong>MMSI:</strong> ${report.mmsi}<br>
@@ -115,14 +117,16 @@ function onSocketReady() {
             </div>
         `;
         const label = new BMap.Label(content, {
-            offset: new BMap.Size(25, 25) // 标签相对图标的偏移
+            offset: new BMap.Size(35, 35) // 标签相对图标的偏移
         });
         label.setStyle({ display: "none" }); // 初始隐藏
         return label;
     }
 
-    async function fetchAndDrawPath(mmsi, showAlert = false) {
-        console.log("正在刷新轨迹 MMSI:", mmsi);
+    async function fetchAndDrawPath(mmsi, showAlert = false, ifzoom = false) {
+        console.log(`--- fetchAndDrawPath called for MMSI: ${mmsi}. showAlert: ${showAlert}, ifzoom: ${ifzoom} ---`);
+        // console.log("正在刷新轨迹 MMSI:", mmsi);
+        
         clearAllShipOverlays(); // 清除所有船只的轨迹
 
         currentMmsi = mmsi; // 更新当前显示的MMSI
@@ -202,7 +206,17 @@ function onSocketReady() {
 
             shipOverlays[mmsi] = { markers: newMarkers, polyline: polyline };
             if (bmapPoints.length > 0) {
-                map.setViewport(bmapPoints);
+                // 首次进入网页时，采用setViewport来同时调整地图中心以及缩放等级
+                if(ifzoom) {
+                    map.setViewport(bmapPoints);
+                    console.log("缩放并调整中心");
+                }
+                // 后续为了用户的良好体验，仅作地图中心点更改
+                else {
+                    const latestPoint = bmapPoints[bmapPoints.length - 1];
+                    map.panTo(latestPoint);
+                    console.log("仅调整中心");
+                }
             }
             
             if (showAlert) alert("设置已应用成功！轨迹已更新。");
@@ -249,6 +263,7 @@ function onSocketReady() {
         e.preventDefault();
         shipListItems.forEach(li => li.classList.remove('active'));
         target.classList.add('active');
+        // console.log("addEventListener调用fetchAndDrawPath");
         fetchAndDrawPath(target.dataset.mmsi);
     });
 
@@ -263,6 +278,7 @@ function onSocketReady() {
         if (isNaN(distVal) || distVal < 100 || distVal > 10000) { alert("请输入100~10000之间的任意整数作为最小距离。"); return; }
         const mmsi = activeShip.dataset.mmsi;
         if (!mmsi) { alert("发生了一个内部错误，无法识别当前船只。"); return; }
+        // console.log("handleConfirmClick调用fetchAndDrawPath");
         fetchAndDrawPath(mmsi, showAlert);
     }
     
@@ -279,7 +295,8 @@ function onSocketReady() {
         const defaultMmsi = firstShipElement.dataset.mmsi;
         if (defaultMmsi) {
             firstShipElement.classList.add('active');
-            fetchAndDrawPath(defaultMmsi);
+            // console.log("初始化部分调用fetchAndDrawPath");
+            fetchAndDrawPath(defaultMmsi, false, true);
         }
     }
 }

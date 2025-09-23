@@ -313,9 +313,6 @@ function showNetworkState(param) {
         rsrpValue.innerHTML = `<h1>${param.rsrp || '?'} dBm</h1>`;
         rsrpMeter.value = param.rsrp ? parseFloat(param.rsrp) + 150 : 0;
     }
-    else{
-        console.warning("上报中的rsrp数据为空！")
-    }
 }
 
 function setLight(id, status) {

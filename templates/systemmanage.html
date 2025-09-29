@@ -59,6 +59,15 @@
             <div id="report_mode_status" class="form-text">端站当前上报方式：暂无数据</div>
         </div>
         <div class="col-md-6 mb-2">
+            <label for="report_RTC" class="form-label">是否上报RTC</label>
+            <select id="report_RTC" class="form-select">
+                <option value="" disabled selected>-------</option>
+                <option value="0">上报RTC</option>
+                <option value="1">不上报RTC</option>
+            </select>
+            <div id="report_RTC_status" class="form-text">端站当前是否上报RTC：暂无数据</div>
+        </div>
+        <div class="col-md-6 mb-2">
             <label for="report_interval" class="form-label">上报时间间隔 (秒)</label>
             <input type="number" id="report_interval" class="form-control">
             <div id="report_interval_status" class="form-text">端站当前上报时间间隔：暂无数据</div>

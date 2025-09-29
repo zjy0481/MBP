@@ -78,7 +78,7 @@ function onSocketReady() {
                 // 设置工作模式
                 else if (message.module === 'set_work_mode') {
                     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'work_pattern') {
-                        if (responseData.result === '1') {
+                        if (responseData.result === '0') {
                             alert('工作模式设置成功！');
                             sendControlCommand('query_work_mode');
                         } else {
@@ -106,7 +106,7 @@ function onSocketReady() {
                 // 手动控制天线旋转
                 else if (message.module === 'turn_control') {
                     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'rotate') {
-                        if (responseData.result === '1') {
+                        if (responseData.result === '0') {
                             alert('天线转动操作成功！');
                         } else {
                             alert(`天线转动操作失败！\n原因: ${responseData.error || '未知'}`);

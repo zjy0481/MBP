@@ -129,20 +129,20 @@ class DataConsumer(AsyncWebsocketConsumer):
             }
 
             # --- 根据通信协议设置 payload 包（NM下发） ---
-            if module == 'query_work_mode':                     # 查询工作模式
+            if module == 'query_work_mode':                         # 查询工作模式
                 payload['op'] = 'query'
                 payload['op_sub'] = 'work_pattern'
 
-            elif module == 'set_work_mode':                     # 设置工作模式
+            elif module == 'set_work_mode':                         # 设置工作模式
                 payload['op'] = 'antenna_control'
                 payload['op_sub'] = 'work_pattern'
                 payload['pattern'] = frontend_payload.get('pattern')
 
-            elif module == 'query_device_status':               # 查询设备状态
+            elif module == 'query_device_status':                   # 查询设备状态
                 payload['op'] = 'query'
                 payload['op_sub'] = 'equipment_status'
 
-            elif module == 'turn_control':                      # 手动控制天线旋转
+            elif module == 'turn_control':                          # 手动控制天线旋转
                 payload['op'] = 'antenna_control'
                 payload['op_sub'] = 'rotate'
                 payload['mode'] = frontend_payload.get('mode')
@@ -150,25 +150,26 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['direct'] = frontend_payload.get('direct')
                 payload['angle'] = frontend_payload.get('angle')
 
-            elif module in ['adu_soft_rst', 'adu_task_rst']:    # 系统复位
+            elif module == 'adu_rst':                               # 系统复位
                 payload['op'] = 'antenna_control'
-                payload['op_sub'] = module # 'adu_soft_rst' 或 'adu_task_rst'
+                payload['op_sub'] = 'adu_rst'
+                payload['rst_type'] = frontend_payload.get('rst_type')
 
-            elif module == 'query_rtc':                         # 查询RTC时间
+            elif module == 'query_rtc':                             # 查询RTC时间
                 payload['op'] = 'query'
                 payload['op_sub'] = 'RTC'
 
-            elif module == 'set_rtc':                           # 设置RTC时间
+            elif module == 'set_rtc':                               # 设置RTC时间
                 payload['op'] = 'antenna_control'
                 payload['op_sub'] = 'set_RTC'
                 payload['date'] = frontend_payload.get('date')
                 payload['time'] = frontend_payload.get('time')
             
-            elif module == 'query_report_config':               # 查询上报配置
+            elif module == 'query_report_config':                   # 查询上报配置
                 payload['op'] = 'query'
                 payload['op_sub'] = 'report_config'
 
-            elif module == 'set_report_config':                 # 设置上报配置
+            elif module == 'set_report_config':                     # 设置上报配置
                 payload['op'] = 'antenna_control'
                 payload['op_sub'] = 'set_report_config'
                 payload['ip'] = frontend_payload.get('ip')
@@ -176,22 +177,24 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['mode'] = frontend_payload.get('mode')
                 payload['interval'] = frontend_payload.get('interval')
 
-            elif module == 'query_version':                     # 版本查询
+            elif module == 'query_version':                         # 版本查询
                 payload['op'] = 'query'
                 payload['op_sub'] = 'version'
 
-            elif module in ['upload_adu_file', 'upload_acu_file']: # ADU/ACU 文件上传
-                payload['op'] = 'upload_file'
-                payload['op_sub'] = 'adu_update_file' if module == 'upload_adu_file' else 'acu_update_file'
+            elif module == 'upload_update_file':  # ADU/ACU 文件上传
+                payload['op'] = 'update'
+                payload['op_sub'] = 'upload_update_file'
+                payload['update_type'] = frontend_payload.get('update_type')
                 payload['content'] = frontend_payload.get('content')
                 payload['file_name'] = frontend_payload.get('file_name')
                 
-            elif module in ['update_adu', 'update_acu']:          # ADU/ACU 软件升级
-                payload['op'] = 'software_update'
-                payload['op_sub'] = 'adu_update' if module == 'update_adu' else 'acu_update'
+            elif module == 'software_update':            # ADU/ACU 软件升级
+                payload['op'] = 'update'
+                payload['op_sub'] = 'software_update'
+                payload['update_type'] = frontend_payload.get('update_type')
                 payload['file_name'] = frontend_payload.get('file_name')
 
-            else:                                               # default
+            else:                                                   # default
                 gl_logger.error(f"收到了一个未知的控制模块: {module}")
                 raise ValueError("未知的控制模块")
 

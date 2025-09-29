@@ -22,7 +22,7 @@ function onSocketReady() {
             const module = message.module;
             
             if (responseData.hasOwnProperty('result')) {    // 处理端站响应级别的失败
-                if (responseData.result === '1') {
+                if (responseData.result === '0') {
                     alert(`操作 ${module} 成功！`);
                 } else {
                     let errorMessage = `操作 ${module} 失败。`;
@@ -49,12 +49,13 @@ function onSocketReady() {
                     handleVersionResponse(responseData);
                     break;
                 // 设置类和复位类操作成功后只提示，不做UI更新
-                case 'set_work_mode':
-                case 'adu_soft_rst':
-                case 'adu_task_rst':
-                case 'set_rtc':
-                case 'set_report_config':
-                    break;
+                case 'set_work_mode': break;
+                case 'adu_rst': break;
+                case 'set_rtc': break;
+                case 'set_report_config': break;
+                case 'upload_update_file': break;
+                case 'software_update': break;
+                default: break;
             }
             }
 
@@ -124,14 +125,22 @@ function onSocketReady() {
             document.getElementById('report_ip').value = data.ip || '';
             document.getElementById('report_port').value = data.port || '';
             document.getElementById('report_mode').value = data.mode || '';
+            document.getElementById('report_RTC').value = data.RTC || '';
             document.getElementById('report_interval').value = data.interval || '';
             const modeMap = {'0': '不上报', '1': '通过CPE上报', '2': '通过NB上报'};
+            const RTCMap = {'0': '上报RTC时间', '1': '不上报RTC时间'};
             setStatus('report_ip_status', `端站当前IP地址：${data.ip || 'N/A'}`, true);
             setStatus('report_port_status', `端站当前端口号：${data.port || 'N/A'}`, true);
             setStatus('report_mode_status', `端站当前上报方式：${modeMap[data.mode] || '未知'}`, true);
+            setStatus('report_mode_status', `端站当前是否上报RTC：${RTCMap[data.RTC] || '未知'}`, true);
             setStatus('report_interval_status', `端站当前上报时间间隔：${data.interval || 'N/A'}秒`, true);
         } else {
             setStatus('report_ip_status', '查询失败：端站响应格式错误', false);
+            setStatus('report_port_status', '查询失败：端站响应格式错误', false);
+            setStatus('report_mode_status', '查询失败：端站响应格式错误', false);
+            setStatus('report_mode_status', '查询失败：端站响应格式错误', false);
+            setStatus('report_interval_status', '查询失败：端站响应格式错误', false);
+
         }
     }
     
@@ -149,6 +158,7 @@ function onSocketReady() {
         const uploadBtn = document.getElementById(`${type}_upload`);
         const upgradeBtn = document.getElementById(`${type}_upgrade`);
         const fileInput = document.getElementById(`${type}_file`);
+        const update_type = (type === 'adu') ? "0" : "1";
 
         // 上传按钮事件
         uploadBtn.addEventListener('click', () => {
@@ -162,7 +172,8 @@ function onSocketReady() {
             reader.onload = function(e) {
                 // e.target.result 的格式是 "data:;base64,xxxxxx"，我们只需要逗号后面的部分
                 const fileContent = e.target.result.split(',')[1];
-                sendControlCommand(`upload_${type}_file`, {
+                sendControlCommand('upload_update_file', {
+                    update_type: update_type,
                     content: fileContent,
                     file_name: file.name
                 });
@@ -181,7 +192,8 @@ function onSocketReady() {
                 alert('请先选择一个文件！');
                 return;
             }
-            sendControlCommand(`update_${type}`, {
+            sendControlCommand('software_update', {
+                update_type: update_type,
                 file_name: file.name
             });
             alert('软件升级指令已发送，请等待设备响应，升级所需时间可能较久，请您耐心等待...');
@@ -214,8 +226,14 @@ function onSocketReady() {
     });
 
     // 系统复位
-    document.getElementById('adu_task_rst').addEventListener('click', () => sendControlCommand('adu_task_rst'));
-    document.getElementById('adu_soft_rst').addEventListener('click', () => sendControlCommand('adu_soft_rst'));
+    document.getElementById('adu_task_rst').addEventListener('click', () => {
+        const rst_type = 0;
+        sendControlCommand('adu_rst', {rst_type});
+    });
+    document.getElementById('adu_soft_rst').addEventListener('click', () => {
+        const rst_type = 1;
+        sendControlCommand('adu_rst', {rst_type});
+    });
 
     // RTC
     document.getElementById('query_rtc').addEventListener('click', () => sendControlCommand('query_rtc'));

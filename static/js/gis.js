@@ -4,8 +4,19 @@ function onSocketReady() {
     // 全局变量和DOM元素获取
     // -------------------------------------------------------------------
     let map;
-    let shipOverlays = {}; // 存储每艘船的覆盖物
+    let shipOverlays = {}; // 存储每艘船的【固定】点
     let currentMmsi = null; // 当前显示的船舶MMSI
+
+    let tempPointOverlay = { marker: null, polyline: null }; // 存储【临时】点和其连接线
+    let lastFixedPoint = null;    // 存储最后一个【固定】点的信息 {point, report}
+    let stickyLabels = new Set(); // 使用Set来存储被用户打开（固定）的标签的唯一标识
+
+    // 定义统一的航迹线样式常量
+    const MAIN_POLYLINE_STYLE = {
+        strokeColor: "blue",
+        strokeWeight: 3,
+        strokeOpacity: 0.6
+    };
 
     const sidebar = document.getElementById('gis-sidebar');
     const toggleBtn = document.getElementById('toggle-sidebar-btn');
@@ -25,7 +36,7 @@ function onSocketReady() {
     const distanceConfirmBtn = document.getElementById('distance-confirm-btn');
 
     // -------------------------------------------------------------------
-    // WGS84 to BD-09 坐标转换函数 (略)
+    // WGS84 to BD-09 坐标转换函数
     // -------------------------------------------------------------------
     function wgs84ToBd09(wgsLng, wgsLat) { const { lng: gcjLng, lat: gcjLat } = wgs84ToGcj02(wgsLng, wgsLat); const { lng: bdLng, lat: bdLat } = gcj02ToBd09(gcjLng, gcjLat); return { lng: bdLng, lat: bdLat }; }
     function wgs84ToGcj02(wgsLng, wgsLat) { if (outOfChina(wgsLng, wgsLat)) { return { lng: wgsLng, lat: wgsLat }; } let dLat = transformLat(wgsLng - 105.0, wgsLat - 35.0); let dLng = transformLng(wgsLng - 105.0, wgsLat - 35.0); const radLat = wgsLat / 180.0 * Math.PI; let magic = Math.sin(radLat); magic = 1 - 0.00669342162296594323 * magic * magic; const sqrtMagic = Math.sqrt(magic); dLat = (dLat * 180.0) / ((6378245.0 * (1 - 0.00669342162296594323)) / (magic * sqrtMagic) * Math.PI); dLng = (dLng * 180.0) / (6378245.0 / sqrtMagic * Math.cos(radLat) * Math.PI); const mgLat = wgsLat + dLat; const mgLng = wgsLng + dLng; return { lng: mgLng, lat: mgLat }; }
@@ -39,22 +50,85 @@ function onSocketReady() {
     // -------------------------------------------------------------------
     const gisPageMessageHandler = function(message) {
         // message 就是已经由 base.html 全局处理器 parse 好的 data 对象
-        console.log("这里是gis专用处理器，收到消息类型", message.type)
-        console.log("data:",message.data)
-        if (message.type === 'gis_update_data' && message.data) {
-            const report = message.data;
-            
-            if (report.mmsi !== currentMmsi) {
-                return; // 消息与当前船只无关，直接返回
-            }
+        console.log("这里是gis专用处理器，收到消息类型", message.type);
+        console.log("data:",message.data);
+        
+        if (message.type !== 'gis_update_data' || !message.data) return;
 
-            const reportTime = new Date(`${report.report_date}T${report.report_time}`);
-            const { startTime, endTime } = getCurrentTimeRange();
-            if (reportTime >= startTime && reportTime <= endTime) {
-                console.log("Received relevant live data, refreshing path...");
-                // console.log("websocket动态更新调用fetchAndDrawPath");
-                fetchAndDrawPath(currentMmsi);
-            }
+        const report = message.data;
+        report.long = parseFloat(report.long);
+        report.lat = parseFloat(report.lat);
+
+        if (isNaN(report.long) || isNaN(report.lat)) {
+            console.error("收到的WebSocket数据经纬度无效:", message.data);
+            return;
+        }
+
+        if (report.mmsi !== currentMmsi) {
+            console.warn("消息与当前船只无关");
+            return; // 消息与当前船只无关，直接返回
+        }
+
+        if (!lastFixedPoint) {
+            console.log("当前无固定点，使用WebSocket数据初始化轨迹...");
+            initializeTrackWithFirstPoint(report);
+            return; // 初始化完成后，本次更新结束
+        }
+
+        const reportTime = new Date(`${report.report_date}T${report.report_time}`);
+        const { startTime, endTime } = getCurrentTimeRange();
+        if (reportTime < startTime || reportTime > endTime) {
+            console.warn("消息不在当前设定的时间范围内");
+            return; // 消息不在当前设定的时间范围内，则忽略
+        }
+
+        // --- 开始处理临时点 ---
+        // 1. 清除旧的临时点（如果存在）
+        if (tempPointOverlay.marker) map.removeOverlay(tempPointOverlay.marker);
+        if (tempPointOverlay.polyline) map.removeOverlay(tempPointOverlay.polyline);
+
+        // 2. 创建新的临时点
+        const tempBMapPoint = new BMap.Point(...Object.values(wgs84ToBd09(report.long, report.lat)));
+        const icon = new BMap.Icon("/static/images/direction.png", new BMap.Size(48, 48), { anchor: new BMap.Size(24, 24), imageSize: new BMap.Size(48, 48) });
+        const tempMarker = new BMap.Marker(tempBMapPoint, { icon: icon, rotation: report.yaw });
+        
+        // 绑定数据和标签（包含标签状态持久化逻辑）
+        setupMarker(tempMarker, report);
+        
+        // 3. 创建连接最后一个固定点和临时点的临时路径线
+        const tempPolyline = new BMap.Polyline(
+            [lastFixedPoint.point, tempBMapPoint],
+            MAIN_POLYLINE_STYLE
+        );
+
+        // 4. 在地图上显示并缓存临时覆盖物
+        map.addOverlay(tempMarker);
+        map.addOverlay(tempPolyline);
+        tempPointOverlay = { marker: tempMarker, polyline: tempPolyline };
+
+        // 5. 平滑移动地图中心到临时点
+        map.panTo(tempBMapPoint);
+
+        // 6. 判断是否需要将临时点“晋升”为固定点
+        const minDistance = parseInt(distanceInput.value, 10);
+        const distanceFromLastFixed = map.getDistance(lastFixedPoint.point, tempBMapPoint);
+
+        if (distanceFromLastFixed >= minDistance) {
+            console.log("距离足够，将临时点晋升为固定点。");
+            // a. 在主轨迹线上追加点
+            const mainPolyline = shipOverlays[currentMmsi].polyline;
+            const mainPath = mainPolyline.getPath();
+            mainPath.push(tempBMapPoint);
+            mainPolyline.setPath(mainPath);
+
+            // b. 将临时marker“固化”到shipOverlays中
+            shipOverlays[currentMmsi].markers.push(tempMarker);
+            
+            // c. 更新最后一个固定点的信息
+            lastFixedPoint = { point: tempBMapPoint, report: report };
+
+            // d. 清空临时点覆盖物（因为它已经被“晋升”了）
+            tempPointOverlay = { marker: null, polyline: null };
         }
     };
 
@@ -77,18 +151,19 @@ function onSocketReady() {
     }
 
     function clearAllShipOverlays() {
-        // 遍历存储覆盖物的对象的所有键 (MMSI)
         Object.keys(shipOverlays).forEach(mmsi => {
-            // 移除每个MMSI对应的标记点和路径
             if (shipOverlays[mmsi]) {
                 shipOverlays[mmsi].markers.forEach(marker => map.removeOverlay(marker));
-                if (shipOverlays[mmsi].polyline) {
-                    map.removeOverlay(shipOverlays[mmsi].polyline);
-                }
+                if (shipOverlays[mmsi].polyline) map.removeOverlay(shipOverlays[mmsi].polyline);
             }
         });
-        // 清空整个存储对象，重置状态
         shipOverlays = {};
+
+        // 同时清除临时点
+        if (tempPointOverlay.marker) map.removeOverlay(tempPointOverlay.marker);
+        if (tempPointOverlay.polyline) map.removeOverlay(tempPointOverlay.polyline);
+        tempPointOverlay = { marker: null, polyline: null };
+        lastFixedPoint = null;
     }
 
     function clearSingleShipOverlays(mmsi) {
@@ -127,6 +202,65 @@ function onSocketReady() {
         });
         label.setStyle({ display: "none" }); // 初始隐藏
         return label;
+    }
+
+    // 设置单个Marker的属性、标签和事件（包含状态持久化）
+    function setupMarker(marker, report) {
+        const reportTimestamp = `${report.report_date} ${report.report_time}`;
+        marker.reportData = report;
+
+        // 关键：从全局Set中恢复标签的粘性状态
+        marker.isLabelSticky = stickyLabels.has(reportTimestamp);
+        
+        const label = createMarkerLabel(report);
+        
+        // 如果标签本应是打开的，则立即显示
+        if (marker.isLabelSticky) {
+            label.setStyle({ display: "block" });
+        }
+        marker.setLabel(label);
+
+        marker.addEventListener("mouseover", () => label.setStyle({ display: "block" }));
+        marker.addEventListener("mouseout", () => {
+            if (!marker.isLabelSticky) {
+                label.setStyle({ display: "none" });
+            }
+        });
+        marker.addEventListener("click", () => {
+            marker.isLabelSticky = !marker.isLabelSticky;
+            label.setStyle({ display: marker.isLabelSticky ? "block" : "none" });
+            
+            // 关键：在全局Set中同步标签的最新状态
+            if (marker.isLabelSticky) {
+                stickyLabels.add(reportTimestamp);
+            } else {
+                stickyLabels.delete(reportTimestamp);
+            }
+        });
+    }
+
+    // 处理无初始数据的情况
+    function initializeTrackWithFirstPoint(report) {
+        // 1. 创建第一个点和marker
+        const point = new BMap.Point(...Object.values(wgs84ToBd09(report.long, report.lat)));
+        const icon = new BMap.Icon("/static/images/direction.png", new BMap.Size(48, 48), { anchor: new BMap.Size(24, 24), imageSize: new BMap.Size(48, 48) });
+        const marker = new BMap.Marker(point, { icon: icon, rotation: report.yaw });
+        
+        setupMarker(marker, report);
+        map.addOverlay(marker);
+
+        // 2. 创建主轨迹线（即使只有一个点也要创建）
+        const polyline = new BMap.Polyline([point], MAIN_POLYLINE_STYLE);
+        map.addOverlay(polyline);
+
+        // 3. 初始化缓存
+        shipOverlays[currentMmsi] = { markers: [marker], polyline: polyline };
+
+        // 4. 设置最后一个固定点
+        lastFixedPoint = { point: point, report: report };
+
+        // 5. 将地图中心移动到这个点，并设置一个合适的缩放级别
+        map.centerAndZoom(point, 15); // 15是一个比较适中的近景级别
     }
 
     async function fetchAndDrawPath(mmsi, showAlert = false, ifzoom = false) {
@@ -183,22 +317,8 @@ function onSocketReady() {
                 const icon = new BMap.Icon("/static/images/direction.png", new BMap.Size(48, 48), { anchor: new BMap.Size(24, 24), imageSize: new BMap.Size(48, 48) });
                 const marker = new BMap.Marker(point, { icon: icon, rotation: report.yaw });
                 
-                marker.reportData = report;
-                marker.isLabelSticky = false; // 自定义属性，用于判断标签是否常驻
-
-                const label = createMarkerLabel(report);
-                marker.setLabel(label);
-
-                marker.addEventListener("mouseover", () => label.setStyle({ display: "block" }));
-                marker.addEventListener("mouseout", () => {
-                    if (!marker.isLabelSticky) {
-                        label.setStyle({ display: "none" });
-                    }
-                });
-                marker.addEventListener("click", () => {
-                    marker.isLabelSticky = !marker.isLabelSticky;
-                    label.setStyle({ display: marker.isLabelSticky ? "block" : "none" });
-                });
+                // 使用新的辅助函数来设置marker
+                setupMarker(marker, report);
 
                 map.addOverlay(marker);
                 newMarkers.push(marker);
@@ -206,11 +326,20 @@ function onSocketReady() {
 
             let polyline = null;
             if (bmapPoints.length > 1) {
-                polyline = new BMap.Polyline(bmapPoints, { strokeColor: "blue", strokeWeight: 3, strokeOpacity: 0.6 });
+                polyline = new BMap.Polyline(bmapPoints, MAIN_POLYLINE_STYLE);
                 map.addOverlay(polyline);
             }
 
             shipOverlays[mmsi] = { markers: newMarkers, polyline: polyline };
+            
+            // 记录最后一个固定点，为websocket实时更新做准备
+            if (bmapPoints.length > 0) {
+                lastFixedPoint = {
+                    point: bmapPoints[bmapPoints.length - 1],
+                    report: markersToDraw[0] // markersToDraw被反转过，所以第一个是时间最新的
+                };
+            }
+
             if (bmapPoints.length > 0) {
                 // 首次进入网页时，采用setViewport来同时调整地图中心以及缩放等级
                 if(ifzoom) {

@@ -181,10 +181,10 @@ function onSocketReady() {
         // 显示标签的long、lat为数据库中存储的long、lat，不做转换
         const content = `
             <div class = "map-marker-label">
-                <strong>${report.sn}</strong> <br>
+                <strong>${report.ship_name}</strong> <br>
 
-                经纬度: ${report.long.toFixed(6)}, ${report.lat.toFixed(6)}
-                方位角: ${report.yaw}°<br>
+                经纬度: ${report.long.toFixed(4)}, ${report.lat.toFixed(4)}
+                方位角: ${report.yaw.toFixed(2)}°<br>
 
                 基站名称: ${report.bts_name || 'N/A'}<br>
 

@@ -339,12 +339,17 @@ python manage.py start_nm_service
    
    该服务会持续在后台运行，处理所有UDP和Redis指令。
 
+
 2. **终端 2: 启动Web服务器**
 
    由于项目使用了Channels，不能使用 runserver。必须使用ASGI服务器：
 
    ```bash
    daphne -b your_ip -p your_port mbp_project.asgi:application
+   ```
+   示例：
+   ```bash
+   daphne -b 192.168.0.115 -p 80 mbp_project.asgi:application
    ```
    
    服务器将在 `your_ip:your_port` 端口上运行，处理所有HTTP和WebSocket请求。

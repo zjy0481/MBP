@@ -11,7 +11,6 @@
 # django.setup()
 
 from utils import gl_logger
-from acu.EventManager import EventManager, Event
 # from threading import Thread
 import threading
 import uuid

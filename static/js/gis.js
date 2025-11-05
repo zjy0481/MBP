@@ -5,7 +5,7 @@ function onSocketReady() {
     // -------------------------------------------------------------------
     let map;
     let shipOverlays = {}; // 存储每艘船的【固定】点
-    let currentMmsi = null; // 当前显示的船舶MMSI
+    let currentSn = null; // 当前显示的船舶SN
 
     let tempPointOverlay = { marker: null, polyline: null }; // 存储【临时】点和其连接线
     let lastFixedPoint = null;    // 存储最后一个【固定】点的信息 {point, report}
@@ -64,7 +64,7 @@ function onSocketReady() {
             return;
         }
 
-        if (report.mmsi !== currentMmsi) {
+        if (report.sn !== currentSn) {
             console.warn("消息与当前船只无关");
             return; // 消息与当前船只无关，直接返回
         }
@@ -116,13 +116,13 @@ function onSocketReady() {
         if (distanceFromLastFixed >= minDistance) {
             console.log("距离足够，将临时点晋升为固定点。");
             // a. 在主轨迹线上追加点
-            const mainPolyline = shipOverlays[currentMmsi].polyline;
+            const mainPolyline = shipOverlays[currentSn].polyline;
             const mainPath = mainPolyline.getPath();
             mainPath.push(tempBMapPoint);
             mainPolyline.setPath(mainPath);
 
             // b. 将临时marker“固化”到shipOverlays中
-            shipOverlays[currentMmsi].markers.push(tempMarker);
+            shipOverlays[currentSn].markers.push(tempMarker);
             
             // c. 更新最后一个固定点的信息
             lastFixedPoint = { point: tempBMapPoint, report: report };
@@ -151,10 +151,10 @@ function onSocketReady() {
     }
 
     function clearAllShipOverlays() {
-        Object.keys(shipOverlays).forEach(mmsi => {
-            if (shipOverlays[mmsi]) {
-                shipOverlays[mmsi].markers.forEach(marker => map.removeOverlay(marker));
-                if (shipOverlays[mmsi].polyline) map.removeOverlay(shipOverlays[mmsi].polyline);
+        Object.keys(shipOverlays).forEach(sn => {
+            if (shipOverlays[sn]) {
+                shipOverlays[sn].markers.forEach(marker => map.removeOverlay(marker));
+                if (shipOverlays[sn].polyline) map.removeOverlay(shipOverlays[sn].polyline);
             }
         });
         shipOverlays = {};
@@ -166,13 +166,13 @@ function onSocketReady() {
         lastFixedPoint = null;
     }
 
-    function clearSingleShipOverlays(mmsi) {
-        if (shipOverlays[mmsi]) {
-            shipOverlays[mmsi].markers.forEach(marker => map.removeOverlay(marker));
-            if (shipOverlays[mmsi].polyline) {
-                map.removeOverlay(shipOverlays[mmsi].polyline);
+    function clearSingleShipOverlays(sn) {
+        if (shipOverlays[sn]) {
+            shipOverlays[sn].markers.forEach(marker => map.removeOverlay(marker));
+            if (shipOverlays[sn].polyline) {
+                map.removeOverlay(shipOverlays[sn].polyline);
             }
-            delete shipOverlays[mmsi];
+            delete shipOverlays[sn];
         }
     }
 
@@ -254,7 +254,7 @@ function onSocketReady() {
         map.addOverlay(polyline);
 
         // 3. 初始化缓存
-        shipOverlays[currentMmsi] = { markers: [marker], polyline: polyline };
+        shipOverlays[currentsn] = { markers: [marker], polyline: polyline };
 
         // 4. 设置最后一个固定点
         lastFixedPoint = { point: point, report: report };
@@ -263,15 +263,15 @@ function onSocketReady() {
         map.centerAndZoom(point, 15); // 15是一个比较适中的近景级别
     }
 
-    async function fetchAndDrawPath(mmsi, showAlert = false, ifzoom = false) {
-        console.log(`--- fetchAndDrawPath called for MMSI: ${mmsi}. showAlert: ${showAlert}, ifzoom: ${ifzoom} ---`);
-        // console.log("正在刷新轨迹 MMSI:", mmsi);
+    async function fetchAndDrawPath(sn, showAlert = false, ifzoom = false) {
+        console.log(`--- fetchAndDrawPath called for SN: ${sn}. showAlert: ${showAlert}, ifzoom: ${ifzoom} ---`);
+        // console.log("正在刷新轨迹 SN:", sn);
         
         clearAllShipOverlays(); // 清除所有船只的轨迹
 
-        currentMmsi = mmsi; // 更新当前显示的MMSI
-        if (!mmsi) {
-            console.error("MMSI is required.");
+        currentSn = sn; // 更新当前显示的SN
+        if (!sn) {
+            console.error("SN is required.");
             return;
         }
 
@@ -282,7 +282,7 @@ function onSocketReady() {
         }
 
         const minDistance = parseInt(distanceInput.value, 10);
-        const apiUrl = `/api/get_track/?mmsi=${mmsi}&start_time=${startTime.toISOString()}&end_time=${endTime.toISOString()}`;
+        const apiUrl = `/api/get_track/?sn=${sn}&start_time=${startTime.toISOString()}&end_time=${endTime.toISOString()}`;
 
         try {
             const response = await fetch(apiUrl);
@@ -330,7 +330,7 @@ function onSocketReady() {
                 map.addOverlay(polyline);
             }
 
-            shipOverlays[mmsi] = { markers: newMarkers, polyline: polyline };
+            shipOverlays[sn] = { markers: newMarkers, polyline: polyline };
             
             // 记录最后一个固定点，为websocket实时更新做准备
             if (bmapPoints.length > 0) {
@@ -399,7 +399,7 @@ function onSocketReady() {
         shipListItems.forEach(li => li.classList.remove('active'));
         target.classList.add('active');
         // console.log("addEventListener调用fetchAndDrawPath");
-        fetchAndDrawPath(target.dataset.mmsi);
+        fetchAndDrawPath(target.dataset.sn);
     });
 
     timeRangeSelect.addEventListener('change', () => { customTimeRangeDiv.style.display = (timeRangeSelect.value === 'custom') ? 'block' : 'none'; });
@@ -411,10 +411,10 @@ function onSocketReady() {
         if (!activeShip) { alert("请先从左侧列表选择一艘船。"); return; }
         const distVal = parseInt(distanceInput.value, 10);
         if (isNaN(distVal) || distVal < 100 || distVal > 50000) { alert("请输入100~50000之间的任意整数作为最小距离。"); return; }
-        const mmsi = activeShip.dataset.mmsi;
-        if (!mmsi) { alert("发生了一个内部错误，无法识别当前船只。"); return; }
+        const sn = activeShip.dataset.sn;
+        if (!sn) { alert("发生了一个内部错误，无法识别当前船只。"); return; }
         // console.log("handleConfirmClick调用fetchAndDrawPath");
-        fetchAndDrawPath(mmsi, showAlert);
+        fetchAndDrawPath(sn, showAlert);
     }
     
     timeConfirmBtn.addEventListener('click', () => handleConfirmClick(true));
@@ -425,13 +425,13 @@ function onSocketReady() {
     // -------------------------------------------------------------------
     initMap();
 
-    const firstShipElement = document.querySelector('#ship-list-container .list-group-item[data-mmsi]');
+    const firstShipElement = document.querySelector('#ship-list-container .list-group-item[data-sn]');
     if (firstShipElement) {
-        const defaultMmsi = firstShipElement.dataset.mmsi;
-        if (defaultMmsi) {
+        const defaultSn = firstShipElement.dataset.sn;
+        if (defaultSn) {
             firstShipElement.classList.add('active');
             // console.log("初始化部分调用fetchAndDrawPath");
-            fetchAndDrawPath(defaultMmsi, false, true);
+            fetchAndDrawPath(defaultSn, false, true);
         }
     }
 }

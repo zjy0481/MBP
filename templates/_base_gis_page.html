@@ -128,10 +128,10 @@
                     <input type="text" id="ship-search-input" class="form-control mb-2" placeholder="搜索船舶名称或MMSI...">
                     <div class="list-group ship-list-container" id="ship-list-container">
                         {% if ships %}
-                            {% for ship in ships %}
-                            <a href="#" class="list-group-item list-group-item-action" data-mmsi="{{ ship.mmsi }}">
-                                <strong>{{ ship.ship_name }}</strong><br>
-                                <small class="text-muted">mmsi: {{ ship.mmsi }}</small>
+                            {% for terminal in ships %}
+                            <a href="#" class="list-group-item list-group-item-action" data-sn="{{ terminal.sn }}">
+                                <strong>{{ terminal.ship.ship_name }} - {{ terminal.sn }}</strong><br>
+                                <small class="text-muted">mmsi: {{ terminal.ship.mmsi }}</small>
                             </a>
                             {% endfor %}
                         {% else %}

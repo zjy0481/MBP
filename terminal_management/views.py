@@ -313,23 +313,79 @@ def systemmanage(request):
 # --- GIS 视图 ---
 @login_required
 def gis_page(request):
-    """渲染 GIS 地图页面"""
-    success, ships_or_error = services.get_all_ships()
+    # 1. 查询所有端站 (TerminalInfo) 而不是船舶 (ShipInfo)
+    success, terminals_or_error = services.get_all_terminals()
+
+    terminals_list = []
+    if success:
+        # 2. 按照“船名”和“SN号”排序，确保同一艘船的端站相邻
+        #    我们使用 'ship__ship_name' 来访问外键关联的 ShipInfo 模型的 ship_name 字段
+        # terminals_list = terminals_or_error.order_by('ship__ship_name', 'sn')
+        terminals_list = terminals_or_error.select_related('ship').order_by('ship__ship_name', 'sn')
+
     context = {
-        'ships': ships_or_error if success else [],
-        'error': None if success else ships_or_error
+        # 3. 关键：我们仍然使用 'ships' 作为模板上下文的变量名。
+        #    这样可以最大程度地减少对模板文件的修改（可能只需要修改循环体内部）
+        'ships': terminals_list, 
+        'error': None if success else terminals_or_error
     }
     return render(request, 'gis.html', context)
 
+# @login_required
+# def get_ship_track(request):
+#     """获取指定船舶在特定时间范围内的轨迹点数据API"""
+#     mmsi = request.GET.get('mmsi')
+#     start_time_str = request.GET.get('start_time')
+#     end_time_str = request.GET.get('end_time')
+
+#     if not all([mmsi, start_time_str, end_time_str]):
+#         return JsonResponse({'error': '缺少必要的参数(mmsi, start_time, end_time)'}, status=400)
+
+#     try:
+#         start_time = datetime.fromisoformat(start_time_str)
+#         end_time = datetime.fromisoformat(end_time_str)
+#     except ValueError:
+#         return JsonResponse({'error': '时间格式无效，请使用ISO 8601格式'}, status=400)
+
+#     # 步骤 1: 首先获取船舶信息
+#     ship_success, ship_or_error = services.get_ship_by_mmsi(mmsi)
+#     if not ship_success:
+#         return JsonResponse({'error': ship_or_error}, status=404)
+#     ship = ship_or_error
+
+#     # 步骤 2: 获取该船的轨迹报告
+#     success, reports_or_error = services.get_reports_by_mmsi_and_time(mmsi, start_time, end_time)
+#     if not success:
+#         return JsonResponse({'error': str(reports_or_error)}, status=500)
+
+#     # 步骤 3: 序列化数据，不再进行错误的跨表查询
+#     track_data = list(reports_or_error.values(
+#         'sn', 'report_date', 'report_time', 'long', 'lat', 'yaw', 'bts_name', 'standard', 'pci', 'rsrp', 'sinr', 'rssi'
+#     ))
+
+#     # 步骤 4: 手动附加船舶信息并格式化时间
+#     for report in track_data:
+#         report['report_date'] = report['report_date'].isoformat()
+#         report['report_time'] = report['report_time'].isoformat()
+#         # 将从步骤1获取的船舶信息附加到每条记录中
+#         report['ship_name'] = ship.ship_name
+#         report['mmsi'] = ship.mmsi
+#         report['ship_owner'] = ship.ship_owner
+
+#     return JsonResponse(track_data, safe=False)
+
 @login_required
 def get_ship_track(request):
-    """获取指定船舶在特定时间范围内的轨迹点数据API"""
-    mmsi = request.GET.get('mmsi')
+    """获取指定【端站】在特定时间范围内的轨迹点数据API"""
+    
+    # 1. 接收 'sn' 而不是 'mmsi'
+    sn = request.GET.get('sn')
     start_time_str = request.GET.get('start_time')
     end_time_str = request.GET.get('end_time')
 
-    if not all([mmsi, start_time_str, end_time_str]):
-        return JsonResponse({'error': '缺少必要的参数(mmsi, start_time, end_time)'}, status=400)
+    # 2. 更新参数检查
+    if not all([sn, start_time_str, end_time_str]):
+        return JsonResponse({'error': '缺少必要的参数(sn, start_time, end_time)'}, status=400)
 
     try:
         start_time = datetime.fromisoformat(start_time_str)
@@ -337,18 +393,22 @@ def get_ship_track(request):
     except ValueError:
         return JsonResponse({'error': '时间格式无效，请使用ISO 8601格式'}, status=400)
 
-    # 步骤 1: 首先获取船舶信息
-    ship_success, ship_or_error = services.get_ship_by_mmsi(mmsi)
-    if not ship_success:
-        return JsonResponse({'error': ship_or_error}, status=404)
-    ship = ship_or_error
+    # 步骤 1: 首先获取端站信息
+    term_success, term_or_error = services.get_terminal_by_sn(sn)
+    if not term_success:
+        return JsonResponse({'error': str(term_or_error)}, status=404)
+    
+    # 从端站对象中获取关联的船舶信息
+    terminal = term_or_error
+    ship = terminal.ship 
 
-    # 步骤 2: 获取该船的轨迹报告
-    success, reports_or_error = services.get_reports_by_mmsi_and_time(mmsi, start_time, end_time)
+    # 步骤 2: 调用您提供的、现在位于 services.py 中的新函数
+    success, reports_or_error = services.get_reports_by_sn_and_time(sn, start_time, end_time)
+    
     if not success:
         return JsonResponse({'error': str(reports_or_error)}, status=500)
 
-    # 步骤 3: 序列化数据，不再进行错误的跨表查询
+    # 步骤 3: 序列化数据 (与之前相同)
     track_data = list(reports_or_error.values(
         'sn', 'report_date', 'report_time', 'long', 'lat', 'yaw', 'bts_name', 'standard', 'pci', 'rsrp', 'sinr', 'rssi'
     ))

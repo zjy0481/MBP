@@ -89,15 +89,15 @@ function onSocketReady() {
                 // 查询设备状态
                 else if (message.module === 'query_device_status') {
                     if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'equipment_status') {
-                        // 协议中 1=正常, 0=异常; 而 setLight 函数 0=正常, 1=异常，需要转换
+                        // 协议中 0=正常, 1=异常; setLight 函数 0=正常, 1=异常
                         const statusMap = {
-                            IMUState: responseData.IMU_stat === '1' ? 0 : 1,
-                            DGPSState: responseData.DGPS_stat === '1' ? 0 : 1,
-                            storageState: responseData.storage_stat === '1' ? 0 : 1,
-                            yawMotoState: responseData.yaw_moto_stat === '1' ? 0 : 1,
-                            pitchMotoState: responseData.pitch_moto_stat === '1' ? 0 : 1,
-                            yawLimitState: responseData.yaw_lim_stat === '1' ? 0 : 1,
-                            pitchLimitState: responseData.pitch_lim_stat === '1' ? 0 : 1,
+                            IMUState: responseData.IMU_stat === '0' ? 0 : 1,
+                            DGPSState: responseData.DGPS_stat === '0' ? 0 : 1,
+                            storageState: responseData.storage_stat === '0' ? 0 : 1,
+                            yawMotoState: responseData.yaw_moto_stat === '0' ? 0 : 1,
+                            pitchMotoState: responseData.pitch_moto_stat === '0' ? 0 : 1,
+                            yawLimitState: responseData.yaw_lim_stat === '0' ? 0 : 1,
+                            pitchLimitState: responseData.pitch_lim_stat === '0' ? 0 : 1,
                         };
                         showDevicesStatus(statusMap);
                         alert('设备状态查询成功！');

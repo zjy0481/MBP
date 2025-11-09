@@ -265,6 +265,7 @@ class NM_Service():
             op_sub = msg_dict.get('op_sub')
             long = msg_dict.get('long')
             lat = msg_dict.get('lat')
+            sn = msg_dict.get('sn')
 
             if op == 'report':
                 gl_logger.info("正在处理上报消息...")
@@ -301,6 +302,13 @@ class NM_Service():
                         gl_logger.info(f"成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
 
                 gl_logger.info(f"成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
+            elif (sn and not op and not op_sub):
+                update_success, update_result = services.update_terminal_network_info(sn, peer_ip, peer_port)
+                if not update_success:
+                    # 如果更新失败，只记录警告，不影响主流程
+                    gl_logger.warning(f"更新端站网络信息失败 (SN: {sn}): {update_result}")
+                else:
+                    gl_logger.info(f"收到心跳包，成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
             else:
                 gl_logger.warning(f"已忽略 op={op}, op_sub={op_sub} 的消息（非上报消息）。")
 

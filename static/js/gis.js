@@ -303,8 +303,8 @@ function onSocketReady() {
         map.centerAndZoom(point, 15); // 15是一个比较适中的近景级别
     }
 
-    async function fetchAndDrawPath(sn, showAlert = false, ifzoom = false) {
-        console.log(`--- fetchAndDrawPath called for SN: ${sn}. showAlert: ${showAlert}, ifzoom: ${ifzoom} ---`);
+    async function fetchAndDrawPath(sn, ifzoom = false) {
+        console.log(`--- fetchAndDrawPath called for SN: ${sn}. ifzoom: ${ifzoom} ---`);
         // console.log("正在刷新轨迹 SN:", sn);
         
         clearAllShipOverlays(); // 清除所有船只的轨迹
@@ -317,7 +317,7 @@ function onSocketReady() {
 
         const { startTime, endTime, shouldDraw } = getCurrentTimeRange();
         if (!shouldDraw) {  //用户选择“不显示轨迹”时
-            if (showAlert) alert("已清除轨迹显示。");
+            console.log("已清除轨迹显示。");
             return;
         }
 
@@ -330,7 +330,7 @@ function onSocketReady() {
             const reports = await response.json();
 
             if (reports.length === 0) {
-                if (showAlert) alert("在选定时间段内没有符合要求的上报数据");
+                console.warn("在选定时间段内没有符合要求的上报数据");
                 return;
             }
 
@@ -394,11 +394,10 @@ function onSocketReady() {
                 }
             }
             
-            if (showAlert) alert("设置已应用成功！轨迹已更新。");
+            console.log("设置已应用成功！轨迹已更新。");
 
         } catch (error) {
             console.error("加载轨迹数据时发生错误:", error);
-            alert("加载轨迹数据时发生客户端错误。");
         }
     }
     
@@ -415,7 +414,7 @@ function onSocketReady() {
             shouldDraw = false;
         } else if (timeOption === 'custom') {
             if (!startTimeInput.value || !endTimeInput.value) {
-                alert("自定义时间模式下，开始和结束时间不能为空。");
+                console.warn("自定义时间模式下，开始和结束时间不能为空。");
                 shouldDraw = false;
             }
             startTime = new Date(startTimeInput.value);
@@ -446,19 +445,19 @@ function onSocketReady() {
     distanceSlider.addEventListener('input', () => { distanceInput.value = distanceSlider.value; });
     distanceInput.addEventListener('input', () => { distanceSlider.value = distanceInput.value; });
 
-    function handleConfirmClick(showAlert) {
+    function handleConfirmClick() {
         const activeShip = document.querySelector('#ship-list-container .list-group-item.active');
-        if (!activeShip) { alert("请先从左侧列表选择一艘船。"); return; }
+        if (!activeShip) { console.error("activeShip为空。"); return; }
         const distVal = parseInt(distanceInput.value, 10);
         if (isNaN(distVal) || distVal < 100 || distVal > 50000) { alert("请输入100~50000之间的任意整数作为最小距离。"); return; }
         const sn = activeShip.dataset.sn;
-        if (!sn) { alert("发生了一个内部错误，无法识别当前船只。"); return; }
+        if (!sn) { console.error("发生了一个内部错误，无法识别当前船只。"); return; }
         // console.log("handleConfirmClick调用fetchAndDrawPath");
-        fetchAndDrawPath(sn, showAlert);
+        fetchAndDrawPath(sn);
     }
     
-    timeConfirmBtn.addEventListener('click', () => handleConfirmClick(true));
-    distanceConfirmBtn.addEventListener('click', () => handleConfirmClick(true));
+    timeConfirmBtn.addEventListener('click', () => handleConfirmClick());
+    distanceConfirmBtn.addEventListener('click', () => handleConfirmClick());
 
     // -------------------------------------------------------------------
     // 页面初始化

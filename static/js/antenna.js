@@ -45,14 +45,14 @@ function onSocketReady() {
             // 手动查询后没有数据的处理逻辑
             else if (!report && message.sn === selectedSn) {
                 document.getElementById('selected_last_report').innerText = '暂无上报数据';
-                alert(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
+                console.warn(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
                 cleanPageData();
             }
             
         } else if (message.type === 'control_response') {
             if (message.success) {
                 const responseData = message.data; // data 是端站返回的完整JSON
-                alert(`成功收到来自端站的响应，模块: ${message.module}`);
+                console.log(`成功收到来自端站的响应，模块: ${message.module}`);
                 
                 // --- 将端站响应信息反映到前端 ---
 
@@ -79,10 +79,10 @@ function onSocketReady() {
                 else if (message.module === 'set_work_mode') {
                     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'work_pattern') {
                         if (responseData.result === '0') {
-                            alert('工作模式设置成功！');
+                            console.log('工作模式设置成功！');
                             sendControlCommand('query_work_mode');
                         } else {
-                            alert(`工作模式设置失败！\n原因: ${responseData.error || '未知'}`);
+                            console.error(`工作模式设置失败！\n原因: ${responseData.error || '未知'}`);
                         }
                     }
                 }
@@ -100,22 +100,22 @@ function onSocketReady() {
                             pitchLimitState: responseData.pitch_lim_stat === 0 ? 0 : 1,
                         };
                         showDevicesStatus(statusMap);
-                        alert('设备状态查询成功！');
+                        console.log('设备状态查询成功！');
                     }
                 }
                 // 手动控制天线旋转
                 else if (message.module === 'turn_control') {
                     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'rotate') {
                         if (responseData.result === '0') {
-                            alert('天线转动操作成功！');
+                            console.log('天线转动操作成功！');
                         } else {
-                            alert(`天线转动操作失败！\n原因: ${responseData.error || '未知'}`);
+                            console.error(`天线转动操作失败！\n原因: ${responseData.error || '未知'}`);
                         }
                     }
                 }
 
             } else {
-                alert(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
+                console.error(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
             }
         }
     };
@@ -161,7 +161,7 @@ function fetchLatestReport(sn) {
 function sendControlCommand(module, payload = {}) {
     const activeItem = document.querySelector('#terminal-list .list-group-item.active');
     if (!activeItem) {
-        alert('错误：没有选择任何端站！');
+        console.error('错误：没有选择任何端站！');
         return;
     }
     const sn = activeItem.dataset.sn;

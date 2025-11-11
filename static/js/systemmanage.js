@@ -23,16 +23,16 @@ function onSocketReady() {
             
             if (responseData.hasOwnProperty('result')) {    // 处理端站响应级别的失败
                 if (responseData.result === '0') {
-                    alert(`操作 ${module} 成功！`);
+                    console.log(`操作 ${module} 成功！`);
                 } else {
                     let errorMessage = `操作 ${module} 失败。`;
                     if (responseData.error) {
                         errorMessage += `\n错误信息: ${responseData.error}`;
                     }
-                    alert(errorMessage);
+                    console.error(errorMessage);
                 }
             } else {
-                alert(`操作成功！模块: ${module}`);
+                console.log(`操作成功！模块: ${module}`);
 
                 // 根据模块处理响应
             switch (message.module) {
@@ -61,7 +61,7 @@ function onSocketReady() {
 
         } else {
             // 这部分逻辑处理WebSocket通信级别的失败（如超时），保持不变
-            alert(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
+            console.error(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
         }
     };
 
@@ -177,10 +177,10 @@ function onSocketReady() {
                     content: fileContent,
                     file_name: file.name
                 });
-                alert('文件上传指令已发送，请等待设备响应...');
+                console.log('文件上传指令已发送，请等待设备响应...');
             };
             reader.onerror = () => {
-                alert('读取文件时发生错误！');
+                console.error('读取文件时发生错误！');
             };
             reader.readAsDataURL(file); // 将文件读取为 Base64 编码的字符串
         });
@@ -196,7 +196,7 @@ function onSocketReady() {
                 update_type: update_type,
                 file_name: file.name
             });
-            alert('软件升级指令已发送，请等待设备响应，升级所需时间可能较久，请您耐心等待...');
+            console.log('软件升级指令已发送，请等待设备响应，升级所需时间可能较久，请您耐心等待...');
         });
     }
 
@@ -204,7 +204,7 @@ function onSocketReady() {
     function sendControlCommand(module, payload = {}) {
         const activeItem = document.querySelector('#terminal-list .list-group-item.active');
         if (!activeItem) {
-            alert('错误：没有选择任何端站！');
+            console.error('错误：activeItem为空！');
             return;
         }
         const sn = activeItem.dataset.sn;

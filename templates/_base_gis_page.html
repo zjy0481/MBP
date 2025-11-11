@@ -112,12 +112,24 @@
         padding: 0 !important;                      /* 移除默认的内边距，让布局更可控 */
         box-shadow: none !important;                /* 移除可能存在的默认阴影 */
     }
+
+    /* 悬浮测距按钮样式 */
+    #measure-distance-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10; /* 确保它在地图图层之上 */
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* 添加阴影使其更突出 */
+    }
 </style>
 
 <div class="page-wrapper">
     <div class="p-2 border-bottom d-flex justify-content-between align-items-center page-header">
         <h2>{% block page_title %}{% endblock %}</h2>
-        <button id="toggle-sidebar-btn" class="btn btn-outline-secondary" title="收起/展开侧边栏">↔</button>
+        <div>
+            <!-- <button id="measure-distance-btn" class="btn btn-outline-primary me-2">测距</button> -->
+            <button id="toggle-sidebar-btn" class="btn btn-outline-secondary" title="收起/展开侧边栏">↔</button>
+        </div>
     </div>
 
     <div class="interactive-container">
@@ -200,7 +212,7 @@
 
 {% block script %}
 <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=P1JR7p9vIMugbVZsyiKxCm31cN2BP9qj"></script>
-
+<script type="text/javascript" src="https://api.map.baidu.com/library/DistanceTool/1.2/src/DistanceTool_min.js"></script>
 {{ block.super }}
 <script src="{% static 'js/gis.js' %}"></script>
 {% endblock %}

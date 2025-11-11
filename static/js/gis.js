@@ -150,6 +150,46 @@ function onSocketReady() {
         map.addControl(new BMap.OverviewMapControl());
     }
 
+    function setupDistanceTool() {
+        const measureBtn = document.getElementById('measure-distance-btn');
+        let isMeasuring = false;
+
+        // 1. 实例化测距工具
+        const distanceTool = new BMapLib.DistanceTool(map);
+
+        // 2. 监听 "绘制结束" 事件 (用户双击时触发)
+        distanceTool.addEventListener('drawend', () => {
+            if (isMeasuring) { 
+                isMeasuring = false;
+                measureBtn.textContent = '测距';
+                measureBtn.classList.replace('btn-primary', 'btn-outline-primary');
+            }
+        });
+
+        // 3. 监听我们自己的按钮点击事件
+        measureBtn.addEventListener('click', () => {
+            isMeasuring = !isMeasuring;
+            if (isMeasuring) {
+                distanceTool.open();
+                measureBtn.textContent = '退出测距';
+                measureBtn.classList.replace('btn-outline-primary', 'btn-primary');
+            } else {
+                distanceTool.close();
+                measureBtn.textContent = '测距';
+                measureBtn.classList.replace('btn-primary', 'btn-outline-primary');
+            }
+        });
+
+        // 4. 监听测距工具的 "close" 事件
+        distanceTool.addEventListener('close', () => {
+            if (isMeasuring) { 
+                isMeasuring = false;
+                measureBtn.textContent = '测距';
+                measureBtn.classList.replace('btn-primary', 'btn-outline-primary');
+            }
+        });
+    }
+
     function clearAllShipOverlays() {
         Object.keys(shipOverlays).forEach(sn => {
             if (shipOverlays[sn]) {
@@ -424,6 +464,7 @@ function onSocketReady() {
     // 页面初始化
     // -------------------------------------------------------------------
     initMap();
+    setupDistanceTool(); // 在地图初始化后，立刻设置测距工具
 
     const firstShipElement = document.querySelector('#ship-list-container .list-group-item[data-sn]');
     if (firstShipElement) {

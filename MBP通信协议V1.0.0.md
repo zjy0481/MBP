@@ -110,13 +110,13 @@
 | "sn"              | "SN000001"         | 设备序列号                   |
 | "op"              | "query_ans"        | 操作类型：查询（响应）       |
 | "op_sub"          | "equipment_status" | 操作子类：查询设备状态       |
-| "IMU_stat"        | "0"                | 0：正常，1：异常             |
-| "DGPS_stat"       | "0"                | 0：正常，1：异常             |
-| "storage_stat"    | "0"                | 0：正常，1：异常             |
-| "yaw_moto_stat"   | "0"                | 0：正常，1：异常             |
-| "pitch_moto_stat" | "0"                | 0：正常，1：异常             |
-| "yaw_lim_stat"    | "0"                | 0：正常，1：异常（到达限位） |
-| "pitch_lim_stat"  | "0"                | 0：正常，1：异常（到达限位） |
+| "IMU_stat"        | 0                  | 0：正常，1：异常             |
+| "DGPS_stat"       | 0                  | 0：正常，1：异常             |
+| "storage_stat"    | 0                  | 0：正常，1：异常             |
+| "yaw_moto_stat"   | 0                  | 0：正常，1：异常             |
+| "pitch_moto_stat" | 0                  | 0：正常，1：异常             |
+| "yaw_lim_stat"    | 0                  | 0：正常，1：异常（到达限位） |
+| "pitch_lim_stat"  | 0                  | 0：正常，1：异常（到达限位） |
 
 #### 4、手动控制天线
 

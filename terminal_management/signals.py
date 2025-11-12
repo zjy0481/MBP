@@ -117,7 +117,7 @@ def basestation_delete_handler(sender, instance, **kwargs):
     )
 
 # =============================================================================
-# antenna——端站数据与控制相关函数
+# antenna——端站数据与状态相关函数
 # =============================================================================
 # --- 端站数据更新处理器 ---
 
@@ -125,7 +125,7 @@ def basestation_delete_handler(sender, instance, **kwargs):
 def terminal_report_handler(sender, instance, **kwargs):
     """
     当新的 端站上报信息 被保存后，发送 WebSocket 消息。
-    这个信号是“端站数据与控制”页面实时更新的核心。
+    这个信号是“端站数据与状态”页面实时更新的核心。
     """
     channel_layer = get_channel_layer()
     

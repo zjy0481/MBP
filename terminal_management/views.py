@@ -286,14 +286,19 @@ def base_station_delete(request, bts_id):
     # 复用 data_confirm_delete.html 模板
     return render(request, 'data_confirm_delete.html', {'item': station})
 
-# --- 端站数据与控制视图 ---
+# --- 端站数据与状态视图 ---
 
 @login_required
 def antenna(request):
-    """渲染端站数据与控制页面"""
+    """渲染端站数据与状态页面"""
     success, terminals_or_error = services.get_all_terminals()
+
+    terminals_list = []
+    if success:
+        terminals_list = terminals_or_error.select_related('ship').order_by('ship__ship_name', 'sn')
+
     context = {
-        'terminals': terminals_or_error if success else [],
+        'terminals': terminals_list,
         'error': None if success else terminals_or_error
     }
     return render(request, 'antenna.html', context)
@@ -304,8 +309,13 @@ def antenna(request):
 def systemmanage(request):
     """渲染端站系统管理页面"""
     success, terminals_or_error = services.get_all_terminals()
+
+    terminals_list = []
+    if success:
+        terminals_list = terminals_or_error.select_related('ship').order_by('ship__ship_name', 'sn')
+
     context = {
-        'terminals': terminals_or_error if success else [],
+        'terminals': terminals_list,
         'error': None if success else terminals_or_error
     }
     return render(request, 'systemmanage.html', context)

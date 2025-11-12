@@ -32,7 +32,7 @@ urlpatterns = [
     path('base-stations/<str:bts_id>/edit/', views.base_station_update, name='base_station_update'),
     path('base-stations/<str:bts_id>/delete/', views.base_station_delete, name='base_station_delete'),
 
-    # --- 端站数据与控制 ---
+    # --- 端站数据与状态 ---
     path('antenna/', views.antenna, name='antenna'),
 
     # --- 端站系统管理 ---

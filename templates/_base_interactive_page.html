@@ -66,8 +66,8 @@
                         data-port="{{ terminal.port_number|default:'N/A' }}"
                         data-ship-name="{{ terminal.ship.ship_name }}"
                         data-mmsi="{{ terminal.ship.mmsi }}">
-                        <strong>{{ terminal.ship.ship_name }}</strong>
-                        <small class="text-muted d-block">{{ terminal.sn }}</small>
+                        <strong>{{ terminal.ship.ship_name }} - {{ terminal.sn }}</strong><br>
+                        <small class="text-muted">mmsi: {{ terminal.ship.mmsi }}</small>
                     </li>
                     {% endfor %}
                 </ul>

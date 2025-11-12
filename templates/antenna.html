@@ -66,26 +66,166 @@
         <fieldset class="mb-3">
             <legend>MBP状态参数：</legend>
             <div class="row">
-                <div class="col-md-6"><p>基站名称：<input id="bts_name" type="text" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>基站编号：<input id="bts_no" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>基站经度：<input id="bts_longitude" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>基站纬度：<input id="bts_latitude" type="number" class="form-control" readonly></p></div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">基站名称：</span>
+                        <input id="bts_name" type="text" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">基站编号：</span>
+                        <input id="bts_no" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">基站经度：</span>
+                        <input id="bts_longitude" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">基站纬度：</span>
+                        <input id="bts_latitude" type="number" class="form-control" readonly>
+                    </div>
+                </div>
             </div>
             <hr>
             <div class="row">
-                <div class="col-md-6"><p>当前经度：<input id="longitude" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>当前纬度：<input id="latitude" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>理论方位角：<input id="theory_yaw" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>当前方位角：<input id="yaw" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>理论俯仰角：<input id="theory_pitch" type="number" class="form-control" readonly disabled></p></div>
-                <div class="col-md-6"><p>当前俯仰角：<input id="pitch" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>方位限位：<input id="yaw_limit" type="text" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>当前横滚角：<input id="roll" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>温度：<input id="temperature" type="number" class="form-control" readonly></p></div>
-                <div class="col-md-6"><p>湿度：<input id="humidity" type="number" class="form-control" readonly></p></div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">当前经度：</span>
+                        <input id="longitude" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">当前纬度：</span>
+                        <input id="latitude" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">理论方位角：</span>
+                        <input id="theory_yaw" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">当前方位角：</span>
+                        <input id="yaw" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">理论俯仰角：</span>
+                        <input id="theory_pitch" type="number" class="form-control" readonly disabled>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">当前俯仰角：</span>
+                        <input id="pitch" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">方位限位：</span>
+                        <input id="yaw_limit" type="text" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">当前横滚角：</span>
+                        <input id="roll" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">温度：</span>
+                        <input id="temperature" type="number" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text">湿度：</span>
+                        <input id="humidity" type="number" class="form-control" readonly>
+                    </div>
+                </div>
             </div>
         </fieldset>
     </div>
+
+    <div class="col-md-4">
+        <fieldset>
+            <legend>驻留小区网络质量：</legend>
+            <div class="input-group mb-3">
+                <span class="input-group-text">运营商：</span>
+                <input id="dtu_plmn" class="form-control" readonly>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">制式：</span>
+                <input id="dtu_standard" class="form-control" readonly>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">小区ID：</span>
+                <input id="dtu_cellid" class="form-control" readonly>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">PCI：</span>
+                <input id="dtu_pci" class="form-control" readonly>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">信号接收功率：</span>
+                <input id="dtu_rsrp" class="form-control" readonly>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">信号强度指示：</span>
+                <input id="dtu_rssi" class="form-control" readonly>
+            </div>
+            <div class="input-group mb-3">
+                <span class="input-group-text">信噪比：</span>
+                <input id="dtu_sinr" class="form-control" readonly>
+            </div>
+        </fieldset>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <fieldset>
+            <legend>设备状态:</legend>
+            <div class="d-flex justify-content-between align-items-center">
+                <table class="table table-bordered text-center">
+                    <thead>
+                        <tr>
+                            <th>惯导</th>
+                            <th>DGPS</th>
+                            <th>存储</th>
+                            <th>方位电机</th>
+                            <th>俯仰电机</th>
+                            <th>方位限位</th>
+                            <th>俯仰限位</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><li class="statusLight" id="IMUState"></li></td>
+                            <td><li class="statusLight" id="DGPSState"></li></td>
+                            <td><li class="statusLight" id="storageState"></li></td>
+                            <td><li class="statusLight" id="yawMotoState"></li></td>
+                            <td><li class="statusLight" id="pitchMotoState"></li></td>
+                            <td><li class="statusLight" id="yawLimitState"></li></td>
+                            <td><li class="statusLight" id="pitchLimitState"></li></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button id="query_devices_status" class="btn btn-info ms-3">查询</button>
+            </div>
+        </fieldset>
+    </div>
+
     <div class="col-md-4">
         <fieldset class="mb-3">
             <legend>网络速率:</legend>
@@ -99,87 +239,6 @@
             </div>
         </fieldset>
     </div>
-</div>
-
-<div class="row mb-3">
-    <div class="col-md-4">
-        <fieldset>
-            <legend>驻留小区网络质量：</legend>
-            <p>运营商：<input id="dtu_plmn" class="form-control" readonly></p>
-            <p>制式：<input id="dtu_standard" class="form-control" readonly></p>
-            <p>小区ID：<input id="dtu_cellid" class="form-control" readonly></p>
-            <p>PCI：<input id="dtu_pci" class="form-control" readonly></p>
-            <p>信号接收功率：<input id="dtu_rsrp" class="form-control" readonly></p>
-            <p>信号强度指示：<input id="dtu_rssi" class="form-control" readonly></p>
-            <p>信噪比：<input id="dtu_sinr" class="form-control" readonly></p>
-        </fieldset>
-    </div>
-    <div class="col-md-8">
-        <fieldset class="mb-3">
-            <legend>工作模式：</legend>
-            <div class="input-group">
-                <select id="work_mode" class="form-select">
-                    <option value="" disabled selected>-------</option>
-                    <option value="0">自动模式</option>
-                    <option value="1">手动模式</option>
-                </select>
-                <button id="query_work_mode" class="btn btn-info">查询</button>
-                <button id="set_work_mode" class="btn btn-success">设置</button>
-            </div>
-            <div id="work_mode_status" class="form-text mt-2">当前模式：暂无数据</div>
-        </fieldset>
-        <fieldset>
-            <legend>手动控制：</legend>
-            <div class="form-text mb-2">要启用该功能，请先确保工作模式为手动。</div>
-            <div class="d-flex justify-content-center align-items-center">
-                <div class="me-3">
-                    <select id="turn_mode" class="form-select">
-                        <option value="1" selected>增量模式</option>
-                        <option value="0" disabled>绝对值模式</option>
-                    </select>
-                </div>
-                <div class="text-center">
-                    <button id="turn_up" class="btn btn-secondary" title="俯仰向上">↑</button><br>
-                    <button id="turn_left" class="btn btn-secondary" title="方位向左">←</button>
-                    <input id="turn_angle" type="number" value="1" min="0.1" max="180" step="0.1" style="width: 70px; text-align: center;">
-                    <button id="turn_right" class="btn btn-secondary" title="方位向右">→</button><br>
-                    <button id="turn_down" class="btn btn-secondary" title="俯仰向下">↓</button>
-                </div>
-            </div>
-        </fieldset>
-    </div>
-</div>
-
-<fieldset>
-    <legend>设备状态:</legend>
-    <div class="d-flex justify-content-between align-items-center">
-        <table class="table table-bordered text-center">
-            <thead>
-                <tr>
-                    <th>惯导</th>
-                    <th>DGPS</th>
-                    <th>存储</th>
-                    <th>方位电机</th>
-                    <th>俯仰电机</th>
-                    <th>方位限位</th>
-                    <th>俯仰限位</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><li class="statusLight" id="IMUState"></li></td>
-                    <td><li class="statusLight" id="DGPSState"></li></td>
-                    <td><li class="statusLight" id="storageState"></li></td>
-                    <td><li class="statusLight" id="yawMotoState"></li></td>
-                    <td><li class="statusLight" id="pitchMotoState"></li></td>
-                    <td><li class="statusLight" id="yawLimitState"></li></td>
-                    <td><li class="statusLight" id="pitchLimitState"></li></td>
-                </tr>
-            </tbody>
-        </table>
-        <button id="query_devices_status" class="btn btn-info ms-3">查询</button>
-    </div>
-</fieldset>
 {% endblock %}
 
 {% block page_script %}

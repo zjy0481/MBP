@@ -19,10 +19,10 @@ function onSocketReady() {
         selectedPort = detail.port;
 
         // 重置UI状态
-        document.getElementById('work_mode').value = "";
-        const workModeStatus = document.getElementById('work_mode_status');
-        workModeStatus.innerText = '当前模式：暂无数据';
-        workModeStatus.className = 'form-text mt-2';
+        // document.getElementById('work_mode').value = "";
+        // const workModeStatus = document.getElementById('work_mode_status');
+        // workModeStatus.innerText = '当前模式：暂无数据';
+        // workModeStatus.className = 'form-text mt-2';
         cleanPageData();
         
         // 发起数据请求
@@ -57,37 +57,37 @@ function onSocketReady() {
                 // --- 将端站响应信息反映到前端 ---
 
                 // 查询工作模式
-                if (message.module === 'query_work_mode') {
-                    // 检查响应是否符合协议
-                    if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'work_pattern') {
-                        const pattern = responseData.pattern; // "0" or "1"
-                        const workModeSelect = document.getElementById('work_mode');
-                        const workModeStatus = document.getElementById('work_mode_status');
+                // if (message.module === 'query_work_mode') {
+                //     // 检查响应是否符合协议
+                //     if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'work_pattern') {
+                //         const pattern = responseData.pattern; // "0" or "1"
+                //         const workModeSelect = document.getElementById('work_mode');
+                //         const workModeStatus = document.getElementById('work_mode_status');
 
-                        workModeSelect.value = pattern; // 更新下拉框的选中值
-                        const modeText = (pattern === '0') ? "自动模式" : "手动模式";
-                        workModeStatus.innerText = `当前模式: ${modeText}`;
-                        workModeStatus.className = 'mt-2 text-success'; // 移除旧class, 添加绿色class
-                    } else {
-                        // 如果响应格式不正确
-                        const workModeStatus = document.getElementById('work_mode_status');
-                        workModeStatus.innerText = '查询失败：端站响应格式错误';
-                        workModeStatus.className = 'mt-2 text-danger'; // 设置为红色
-                    }
-                }
-                // 设置工作模式
-                else if (message.module === 'set_work_mode') {
-                    if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'work_pattern') {
-                        if (responseData.result === '0') {
-                            console.log('工作模式设置成功！');
-                            sendControlCommand('query_work_mode');
-                        } else {
-                            console.error(`工作模式设置失败！\n原因: ${responseData.error || '未知'}`);
-                        }
-                    }
-                }
-                // 查询设备状态
-                else if (message.module === 'query_device_status') {
+                //         workModeSelect.value = pattern; // 更新下拉框的选中值
+                //         const modeText = (pattern === '0') ? "自动模式" : "手动模式";
+                //         workModeStatus.innerText = `当前模式: ${modeText}`;
+                //         workModeStatus.className = 'mt-2 text-success'; // 移除旧class, 添加绿色class
+                //     } else {
+                //         // 如果响应格式不正确
+                //         const workModeStatus = document.getElementById('work_mode_status');
+                //         workModeStatus.innerText = '查询失败：端站响应格式错误';
+                //         workModeStatus.className = 'mt-2 text-danger'; // 设置为红色
+                //     }
+                // }
+                // // 设置工作模式
+                // else if (message.module === 'set_work_mode') {
+                //     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'work_pattern') {
+                //         if (responseData.result === '0') {
+                //             console.log('工作模式设置成功！');
+                //             sendControlCommand('query_work_mode');
+                //         } else {
+                //             console.error(`工作模式设置失败！\n原因: ${responseData.error || '未知'}`);
+                //         }
+                //     }
+                // }
+                // 查询设备状态，现在antenna只需要这一功能
+                if (message.module === 'query_device_status') {
                     if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'equipment_status') {
                         // 协议中 0=正常, 1=异常; setLight 函数 0=正常, 1=异常
                         const statusMap = {
@@ -103,16 +103,16 @@ function onSocketReady() {
                         console.log('设备状态查询成功！');
                     }
                 }
-                // 手动控制天线旋转
-                else if (message.module === 'turn_control') {
-                    if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'rotate') {
-                        if (responseData.result === '0') {
-                            console.log('天线转动操作成功！');
-                        } else {
-                            console.error(`天线转动操作失败！\n原因: ${responseData.error || '未知'}`);
-                        }
-                    }
-                }
+                // // 手动控制天线旋转
+                // else if (message.module === 'turn_control') {
+                //     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'rotate') {
+                //         if (responseData.result === '0') {
+                //             console.log('天线转动操作成功！');
+                //         } else {
+                //             console.error(`天线转动操作失败！\n原因: ${responseData.error || '未知'}`);
+                //         }
+                //     }
+                // }
 
             } else {
                 console.error(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
@@ -127,21 +127,22 @@ function onSocketReady() {
     }
 
     // --- 为所有控制按钮绑定事件 ---
-    document.getElementById('query_work_mode').addEventListener('click', () => sendControlCommand('query_work_mode'));
+    // 工作模式相关，已废弃
+    // document.getElementById('query_work_mode').addEventListener('click', () => sendControlCommand('query_work_mode'));
     
-    document.getElementById('set_work_mode').addEventListener('click', () => {
-        const workMode = document.getElementById('work_mode').value;
-        if (workMode === "") {
-            alert("请先选择一个工作模式再进行设置！");
-            return;
-        }
-        sendControlCommand('set_work_mode', { pattern: workMode });
-    });
+    // document.getElementById('set_work_mode').addEventListener('click', () => {
+    //     const workMode = document.getElementById('work_mode').value;
+    //     if (workMode === "") {
+    //         alert("请先选择一个工作模式再进行设置！");
+    //         return;
+    //     }
+    //     sendControlCommand('set_work_mode', { pattern: workMode });
+    // });
     
-    document.getElementById('turn_up').addEventListener('click', () => onTurn(1, 0));
-    document.getElementById('turn_down').addEventListener('click', () => onTurn(1, 1));
-    document.getElementById('turn_left').addEventListener('click', () => onTurn(0, 1));
-    document.getElementById('turn_right').addEventListener('click', () => onTurn(0, 0));
+    // document.getElementById('turn_up').addEventListener('click', () => onTurn(1, 0));
+    // document.getElementById('turn_down').addEventListener('click', () => onTurn(1, 1));
+    // document.getElementById('turn_left').addEventListener('click', () => onTurn(0, 1));
+    // document.getElementById('turn_right').addEventListener('click', () => onTurn(0, 0));
 
     document.getElementById('query_devices_status').addEventListener('click', () => sendControlCommand('query_device_status'));
 }

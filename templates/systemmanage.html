@@ -5,7 +5,7 @@
 
 {% block interactive_content %}
 
-<fieldset class="mb-3">
+<!-- <fieldset class="mb-3">
     <legend>工作模式</legend>
     <div class="input-group">
         <select id="work_mode" class="form-select">
@@ -17,7 +17,7 @@
         <button id="set_work_mode" class="btn btn-success">设置</button>
     </div>
     <div id="work_mode_status" class="form-text mt-2">当前模式：暂无数据</div>
-</fieldset>
+</fieldset> -->
 
 <fieldset class="mb-3">
     <legend>系统复位</legend>
@@ -38,48 +38,82 @@
 <fieldset class="mb-3">
     <legend>上报参数设置</legend>
     <div class="row">
+
         <div class="col-md-6 mb-2">
-            <label for="report_ip" class="form-label">IP 地址</label>
-            <input type="text" id="report_ip" class="form-control">
+            <div class="row g-2 align-items-center"> <div class="col-auto"> <label for="report_ip" class="col-form-label">IP 地址</label>
+                </div>
+                <div class="col"> <input type="text" id="report_ip" class="form-control">
+                </div>
+            </div>
             <div id="report_ip_status" class="form-text">端站当前IP地址：暂无数据</div>
         </div>
+
         <div class="col-md-6 mb-2">
-            <label for="report_port" class="form-label">端口号</label>
-            <input type="number" id="report_port" class="form-control">
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <label for="report_port" class="col-form-label">端口号</label>
+                </div>
+                <div class="col">
+                    <input type="number" id="report_port" class="form-control">
+                </div>
+            </div>
             <div id="report_port_status" class="form-text">端站当前端口号：暂无数据</div>
         </div>
+
         <div class="col-md-6 mb-2">
-            <label for="report_mode" class="form-label">上报方式</label>
-            <select id="report_mode" class="form-select">
-                <option value="" disabled selected>-------</option>
-                <option value="0">不上报</option>
-                <option value="1">通过CPE上报</option>
-                <option value="2">通过NB上报</option>
-            </select>
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <label for="report_mode" class="col-form-label">上报方式</label>
+                </div>
+                <div class="col">
+                    <select id="report_mode" class="form-select">
+                        <option value="" disabled selected>-------</option>
+                        <option value="0">不上报</option>
+                        <option value="1">通过CPE上报</option>
+                        <option value="2">通过NB上报</option>
+                    </select>
+                </div>
+            </div>
             <div id="report_mode_status" class="form-text">端站当前上报方式：暂无数据</div>
         </div>
+
         <div class="col-md-6 mb-2">
-            <label for="report_RTC" class="form-label">是否上报RTC</label>
-            <select id="report_RTC" class="form-select">
-                <option value="" disabled selected>-------</option>
-                <option value="0">上报RTC</option>
-                <option value="1">不上报RTC</option>
-            </select>
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <label for="report_RTC" class="col-form-label">是否上报RTC</label>
+                </div>
+                <div class="col">
+                    <select id="report_RTC" class="form-select">
+                        <option value="" disabled selected>-------</option>
+                        <option value="0">上报RTC</option>
+                        <option value="1">不上报RTC</option>
+                    </select>
+                </div>
+            </div>
             <div id="report_RTC_status" class="form-text">端站当前是否上报RTC：暂无数据</div>
         </div>
+
         <div class="col-md-6 mb-2">
-            <label for="report_interval" class="form-label">上报时间间隔 (秒)</label>
-            <input type="number" id="report_interval" class="form-control">
+            <div class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <label for="report_interval" class="col-form-label">上报时间间隔 (秒)</label>
+                </div>
+                <div class="col">
+                    <input type="number" id="report_interval" class="form-control">
+                </div>
+            </div>
             <div id="report_interval_status" class="form-text">端站当前上报时间间隔：暂无数据</div>
         </div>
+
     </div>
+    
     <div class="mt-2">
         <button id="query_report_config" class="btn btn-info">查询</button>
         <button id="set_report_config" class="btn btn-success">设置</button>
     </div>
 </fieldset>
 
-<fieldset class="mb-3">
+<!-- <fieldset class="mb-3">
     <legend>版本查询</legend>
     <div class="row">
         <div class="col-md-6"><p>产品型号: <input id="version_model" class="form-control" readonly></p></div>
@@ -87,6 +121,43 @@
         <div class="col-md-6"><p>ADU软件版本: <input id="version_adu" class="form-control" readonly></p></div>
         <div class="col-md-6"><p>ACU软件版本: <input id="version_acu" class="form-control" readonly></p></div>
         <div class="col-md-6"><p>结构版本: <input id="version_stru" class="form-control" readonly></p></div>
+    </div>
+    <button id="query_version" class="btn btn-info">查询</button>
+</fieldset> -->
+
+<fieldset class="mb-3">
+    <legend>版本查询</legend>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">产品型号:</span>
+                <input id="version_model" class="form-control" readonly>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">硬件版本:</span>
+                <input id="version_hw" class="form-control" readonly>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">ADU软件版本:</span>
+                <input id="version_adu" class="form-control" readonly>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">ACU软件版本:</span>
+                <input id="version_acu" class="form-control" readonly>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <span class="input-group-text">结构版本:</span>
+                <input id="version_stru" class="form-control" readonly>
+            </div>
+        </div>
     </div>
     <button id="query_version" class="btn btn-info">查询</button>
 </fieldset>

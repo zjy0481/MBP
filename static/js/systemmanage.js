@@ -36,9 +36,9 @@ function onSocketReady() {
 
                 // 根据模块处理响应
             switch (message.module) {
-                case 'query_work_mode':
-                    handleWorkModeResponse(responseData);
-                    break;
+                // case 'query_work_mode':
+                //     handleWorkModeResponse(responseData);
+                //     break;
                 case 'query_rtc':
                     handleRtcResponse(responseData);
                     break;
@@ -49,7 +49,7 @@ function onSocketReady() {
                     handleVersionResponse(responseData);
                     break;
                 // 设置类和复位类操作成功后只提示，不做UI更新
-                case 'set_work_mode': break;
+                // case 'set_work_mode': break;
                 case 'adu_rst': break;
                 case 'set_rtc': break;
                 case 'set_report_config': break;
@@ -81,9 +81,9 @@ function onSocketReady() {
     }
     
     function resetAllStatus() {
-        // 重置工作模式
-        document.getElementById('work_mode').value = "";
-        setStatus('work_mode_status', '当前模式：暂无数据', false);
+        // // 重置工作模式
+        // document.getElementById('work_mode').value = "";
+        // setStatus('work_mode_status', '当前模式：暂无数据', false);
         // 重置RTC
         document.getElementById('datetime_rtc').value = new Date().toISOString().slice(0, 16);
         setStatus('rtc_status', '端站当前RTC时间：暂无数据', false);
@@ -101,16 +101,16 @@ function onSocketReady() {
     }
 
     // --- 响应处理器 ---
-    function handleWorkModeResponse(data) {
-        if (data && data.op === 'query_ans' && data.op_sub === 'work_pattern') {
-            const pattern = data.pattern;
-            document.getElementById('work_mode').value = pattern;
-            const modeText = (pattern === '0') ? "自动模式" : "手动模式";
-            setStatus('work_mode_status', `当前模式: ${modeText}`, true);
-        } else {
-            setStatus('work_mode_status', '查询失败：端站响应格式错误', false);
-        }
-    }
+    // function handleWorkModeResponse(data) {
+    //     if (data && data.op === 'query_ans' && data.op_sub === 'work_pattern') {
+    //         const pattern = data.pattern;
+    //         document.getElementById('work_mode').value = pattern;
+    //         const modeText = (pattern === '0') ? "自动模式" : "手动模式";
+    //         setStatus('work_mode_status', `当前模式: ${modeText}`, true);
+    //     } else {
+    //         setStatus('work_mode_status', '查询失败：端站响应格式错误', false);
+    //     }
+    // }
 
     function handleRtcResponse(data) {
         if (data && data.op === 'query_ans' && data.op_sub === 'RTC') {
@@ -218,12 +218,12 @@ function onSocketReady() {
     }
     
     // 工作模式
-    document.getElementById('query_work_mode').addEventListener('click', () => sendControlCommand('query_work_mode'));
-    document.getElementById('set_work_mode').addEventListener('click', () => {
-        const pattern = document.getElementById('work_mode').value;
-        if (pattern === "") { alert("请先选择一个工作模式！"); return; }
-        sendControlCommand('set_work_mode', { pattern });
-    });
+    // document.getElementById('query_work_mode').addEventListener('click', () => sendControlCommand('query_work_mode'));
+    // document.getElementById('set_work_mode').addEventListener('click', () => {
+    //     const pattern = document.getElementById('work_mode').value;
+    //     if (pattern === "") { alert("请先选择一个工作模式！"); return; }
+    //     sendControlCommand('set_work_mode', { pattern });
+    // });
 
     // 系统复位
     document.getElementById('adu_task_rst').addEventListener('click', () => {

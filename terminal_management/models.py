@@ -159,6 +159,13 @@ class TerminalReport(models.Model):
     report_date = models.DateField(verbose_name="上报日期", db_index=True) # 名字用 report_date 避免与 Python 关键字冲突
     report_time = models.TimeField(verbose_name="上报时间") # 名字用 report_time
 
+    # -- 映射数据库中的生成列（存储型） --
+    report_datetime_generated = models.DateTimeField(
+        verbose_name="生成的完整上报时间",
+        editable=False,  # 生成列由数据库自动维护，禁止在Django中手动编辑
+        null=True  # 若生成列可能为空（视业务场景，这里根据实际情况设置）
+    )
+
     # -- 操作信息 --
     op = models.CharField(max_length=20, verbose_name="操作类型")
     op_sub = models.CharField(max_length=20, verbose_name="操作子类")

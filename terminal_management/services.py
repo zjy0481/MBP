@@ -267,21 +267,22 @@ def get_reports_by_sn(sn, limit=100):
     try:
         # reports = TerminalReport.objects.filter(sn=sn).order_by('-report_date', '-report_time')[:limit]
         
-        reports = TerminalReport.objects.filter(sn=sn)\
-            .order_by('-report_datetime_generated')[:limit]
+        reports = TerminalReport.objects.filter(sn=sn).extra(
+            order_by=['-report_datetime_generated']
+        )[:limit]
 
         return (True, reports)
     except Exception as e:
         return (False, f"按SN码查询上报记录时发生错误: {e}")
 
-# def get_reports_by_date_range(start_date, end_date):
-#     """根据日期范围查询上报记录。"""
-#     try:
-#         # __range 查询操作符用于范围查询
-#         reports = TerminalReport.objects.filter(report_date__range=(start_date, end_date)).order_by('report_date', 'report_time')
-#         return (True, reports)
-#     except Exception as e:
-#         return (False, f"按日期范围查询上报记录时发生错误: {e}")
+def get_reports_by_date_range(start_date, end_date):
+    """根据日期范围查询上报记录。"""
+    try:
+        # __range 查询操作符用于范围查询
+        reports = TerminalReport.objects.filter(report_date__range=(start_date, end_date)).order_by('report_date', 'report_time')
+        return (True, reports)
+    except Exception as e:
+        return (False, f"按日期范围查询上报记录时发生错误: {e}")
 
 def delete_report_by_id(report_id):
     """
@@ -306,8 +307,11 @@ def get_latest_report_by_sn(sn):
     """根据 SN 码查询最新的一条上报记录。"""
     # 仅查询，无需使用atomic确保原子性
     try:
-        report = TerminalReport.objects.filter(sn=sn)\
-            .order_by('-report_datetime_generated').first()
+        # report = TerminalReport.objects.filter(sn=sn).order_by('-report_date', '-report_time').first()
+        
+        report = TerminalReport.objects.filter(sn=sn).extra(
+            order_by=['-report_datetime_generated']
+        ).first()
         
         if report:
             return (True, report)
@@ -322,15 +326,33 @@ def get_latest_report_by_sn(sn):
 
 def get_reports_by_sn_and_time(sn, start_time, end_time):
     """
-    根据端站sn和时间范围，查询该端站的上报记录。
+    根据船舶MMSI和时间范围，查询该船所有端站的上报记录。
     结果按照上报时间倒序排列 (从新到旧)。
     """
     try:
-        # 使用生成列进行范围查询，直接利用ORM语法
-        reports = TerminalReport.objects.filter(
-            sn=sn,
-            report_datetime_generated__range=(start_time, end_time)
-        ).order_by('-report_datetime_generated')  # 按生成列倒序（新->旧）
+        # local_start_time = timezone.localtime(start_time)
+        # local_end_time = timezone.localtime(end_time)
+        # # 由于时间和日期是分开的字段，我们需要构造一个稍微复杂的查询
+        # start_date = local_start_time.date()
+        # start_t = local_start_time.time()
+        # end_date = local_end_time.date()
+        # end_t = local_end_time.time()
+
+        # reports = TerminalReport.objects.filter(
+        #     sn=sn,
+        #     # 日期部分在此范围内
+        #     report_date__range=(start_date, end_date)
+        # ).exclude(
+        #     # 排除掉开始日期里，时间早于开始时间的部分
+        #     Q(report_date=start_date, report_time__lt=start_t) |
+        #     # 排除掉结束日期里，时间晚于结束时间的部分
+        #     Q(report_date=end_date, report_time__gt=end_t)
+        # ).order_by('-report_date', '-report_time') # 先按日期降序，再按时间降序
+
+        reports = TerminalReport.objects.filter(sn=sn).extra(
+            where=['report_datetime_generated BETWEEN %s AND %s'],
+            params=[start_time, end_time]
+        ).order_by('-report_datetime_generated') # 按需排序，或 .order_by('report_datetime_generated')
         
         return (True, reports)
 
@@ -351,8 +373,9 @@ def get_latest_report_for_gis_by_sn(sn):
             # latest_report = TerminalReport.objects.filter(sn=sn).order_by('-report_date', '-report_time').first()
             # 遍历模型的所有字段，将它们添加到字典中
 
-            latest_report = TerminalReport.objects.filter(sn=sn)\
-                .order_by('-report_datetime_generated').first()
+            latest_report = TerminalReport.objects.filter(sn=sn).extra(
+                order_by=['-report_datetime_generated']
+            ).first()
             
             for field in latest_report._meta.fields:
                 report_dict[field.name] = str(getattr(latest_report, field.name))

@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}GIS船舶信息地图{% endblock %}
+
+{% block content %}
+<style>
+    /* 样式与上次相同，保持风格一致 */
+    .page-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 57px); /* Full height minus navbar */
+    }
+    .page-header {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #ddd;
+        flex-shrink: 0;
+    }
+    .interactive-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+    }
+    .gis-sidebar {
+        width: 350px;
+        background-color: #fff;
+        border-right: 1px solid #ddd;
+        transition: width 0.3s ease, padding 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }
+    .gis-sidebar.collapsed {
+        width: 0;
+        padding: 0;
+        overflow: hidden;
+        border-right: none;
+    }
+    .sidebar-content-wrapper {
+        flex-grow: 1;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+    .interactive-content {
+        flex-grow: 1;
+        position: relative;
+    }
+
+    /* 上半部分: 船舶列表 */
+    .ship-list-section {
+        height: 55%;
+        display: flex;
+        flex-direction: column;
+        padding: 1rem;
+        flex-shrink: 0;
+    }
+    .ship-list-section h5 {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+    .ship-list-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 0.25rem;
+    }
+    .ship-list .list-group-item { cursor: pointer; }
+    .ship-list .list-group-item.active {
+        font-weight: bold;
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    .ship-list .list-group-item.active .text-muted { color: #e9ecef !important; }
+
+    /* 分隔线 */
+    .sidebar-divider {
+        border-top: 2px solid #e9ecef;
+        margin: 0 1rem;
+    }
+
+    /* 下半部分: 显示设置 */
+    .display-settings-section {
+        flex-grow: 1;
+        padding: 1rem;
+        overflow-y: auto;
+    }
+    .settings-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .slider-container { display: flex; align-items: center; gap: 10px; }
+    #distance-slider { flex-grow: 1; }
+    #distance-input { width: 90px; }
+
+    /* 航迹标签显示设置 */
+    .map-marker-label {
+        padding: 5px 8px;
+        border-radius: 4px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ddd;
+        font-size: 12px;
+        white-space: nowrap;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 覆盖百度地图 BMap.Label 的默认样式 */
+    .BMapLabel {
+        border: none !important;                    /* 移除默认的边框 */
+        background-color: transparent !important;   /* 移除默认背景，让您自己的背景色完全生效 */
+        padding: 0 !important;                      /* 移除默认的内边距，让布局更可控 */
+        box-shadow: none !important;                /* 移除可能存在的默认阴影 */
+    }
+
+    /* 悬浮测距按钮样式 */
+    #measure-distance-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10; /* 确保它在地图图层之上 */
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3); /* 添加阴影使其更突出 */
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="p-2 border-bottom d-flex justify-content-between align-items-center page-header">
+        <h2>{% block page_title %}{% endblock %}</h2>
+        <div>
+            <!-- <button id="measure-distance-btn" class="btn btn-outline-primary me-2">测距</button> -->
+            <button id="toggle-sidebar-btn" class="btn btn-outline-secondary" title="收起/展开侧边栏">↔</button>
+        </div>
+    </div>
+
+    <div class="interactive-container">
+        <div class="gis-sidebar" id="gis-sidebar">
+            <div class="sidebar-content-wrapper">
+                <div class="ship-list-section">
+                    <h5>船舶列表</h5>
+                    <input type="text" id="ship-search-input" class="form-control mb-2" placeholder="搜索船舶名称或MMSI...">
+                    <div class="list-group ship-list-container" id="ship-list-container">
+                        {% if ships %}
+                            {% for terminal in ships %}
+                            <a href="#" class="list-group-item list-group-item-action" data-sn="{{ terminal.sn }}">
+                                <strong>{{ terminal.ship.ship_name }} - {{ terminal.sn }}</strong><br>
+                                <small class="text-muted">mmsi: {{ terminal.ship.mmsi }}</small>
+                            </a>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted p-3">没有找到船舶信息。</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="sidebar-divider"></div>
+
+                <div class="display-settings-section">
+                    <h6 class="settings-title">显示设置</h6>
+                    <div class="form-group">
+                        <label for="time-range-select">行驶轨迹时间跨度</label>
+                        <div class="input-group">
+                            <select class="custom-select" id="time-range-select">
+                                <option value="6h" selected>过去6小时</option>
+                                <option value="12h">过去12小时</option>
+                                <option value="1d">过去1天</option>
+                                <option value="3d">过去3天</option>
+                                <option value="1w">过去1周</option>
+                                <option value="custom">自定义</option>
+                                <option value="none">不显示行驶轨迹</option>
+                            </select>
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="time-confirm-btn">确认</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="custom-time-range" class="mt-2" style="display: none;">
+                        <div class="form-group">
+                            <label for="start-time" class="small">开始时间</label>
+                            <input type="datetime-local" id="start-time" class="form-control form-control-sm">
+                        </div>
+                        <div class="form-group">
+                            <label for="end-time" class="small">结束时间</label>
+                            <input type="datetime-local" id="end-time" class="form-control form-control-sm">
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="distance-slider">标记点间最小距离 (米)</label>
+                        <div class="slider-container">
+                            <small>100</small>
+                            <input type="range" class="custom-range" id="distance-slider" min="100" max="50000" value="1852">
+                            <small>50k</small>
+                        </div>
+                        <div class="input-group mt-2">
+                            <input type="number" class="form-control" id="distance-input" min="100" max="50000" value="1852">
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="distance-confirm-btn">确认</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="interactive-content">
+            {% block interactive_content %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=P1JR7p9vIMugbVZsyiKxCm31cN2BP9qj"></script>
+<script type="text/javascript" src="https://api.map.baidu.com/library/DistanceTool/1.2/src/DistanceTool_min.js"></script>
+{{ block.super }}
+<script src="{% static 'js/gis.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ form_title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<h2>{{ form_title }}</h2>
+<hr>
+<form method="post">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {{ form.as_p }}
+
+    <button type="submit" class="btn btn-success">保存</button>
+    <a href="{% url 'base_station_list' %}" class="btn btn-secondary">返回列表</a>
+</form>
+{% endblock %}

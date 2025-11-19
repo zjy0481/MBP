@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}成功登出 - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="col-md-8 offset-md-2 text-center">
+    <h2>您已成功登出</h2>
+    <hr>
+    <p class="lead">感谢您的使用！</p>
+    <div class="mt-4">
+        <a href="{% url 'home' %}" class="btn btn-primary">回到首页</a>
+        <a href="{% url 'login' %}" class="btn btn-secondary">重新登录</a>
+        <a href="{% url 'register' %}" class="btn btn-info">注册新账号</a>
+    </div>
+</div>
+{% endblock %}

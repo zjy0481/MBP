@@ -1,0 +1,10 @@
+[
+  {
+    "bts_id": 1001,
+    "longitude": 122.05728,
+    "latitude": 30.63446,
+    "bts_name": "test_bts",
+    "coverage_distance": 70,
+    "region_code": 1
+  }
+]

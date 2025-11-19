@@ -1,0 +1,6 @@
+*.log
+*.exe
+*.pyc
+**/__pycache__
+**/logs
+**/Logs

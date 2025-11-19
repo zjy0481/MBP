@@ -1,0 +1,17 @@
+# Django Framework
+django
+
+# Channels for WebSocket support
+channels
+channels-redis
+
+# ASGI server
+daphne
+
+# Database Connector
+mysqlclient
+
+# Redis client
+redis
+
+colorlog

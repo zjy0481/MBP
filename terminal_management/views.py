@@ -385,6 +385,36 @@ def gis_page(request):
 #     return JsonResponse(track_data, safe=False)
 
 @login_required
+def stationimport(request):
+    """
+    基站导入页面视图函数
+    """
+    # 使用services中的函数获取数据
+    success, bts_list = services.get_base_stations_by_region()
+    if not success:
+        messages.error(request, bts_list)  # 错误信息已经在services中格式化
+        bts_list = []
+    
+    success, regions = services.get_distinct_region_codes()
+    if not success:
+        messages.error(request, regions)
+        regions = []
+    
+    success, terminals = services.get_terminals_with_ship_info()
+    if not success:
+        messages.error(request, terminals)
+        terminals = []
+    
+    context = {
+        'bts_list': bts_list,
+        'regions': regions,
+        'terminals': terminals,
+        'error': request.GET.get('error', '')
+    }
+    
+    return render(request, 'stationimport.html', context)
+
+@login_required
 def get_ship_track(request):
     """获取指定【端站】在特定时间范围内的轨迹点数据API"""
     

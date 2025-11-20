@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}基站导入{% endblock %}
+
+{% block content %}
+<h1>基站导入</h1>
+<div class="container mt-4">
+    <div class="row">
+        <!-- 基站选择区域 -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">基站列表</h5>
+                </div>
+                <div class="card-body">
+                    <!-- 批量操作按钮 -->
+                    <div class="btn-group mb-3" role="group">
+                        <button type="button" class="btn btn-secondary" id="selectAllBts">全选</button>
+                        <button type="button" class="btn btn-secondary" id="selectNoneBts">全不选</button>
+                        <div class="btn-group" role="group">
+                            <button id="selectByRegionBtn" type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                按地区号选择
+                            </button>
+                            <div class="dropdown-menu" id="regionDropdown">
+                                {% for region in regions %}
+                                <a class="dropdown-item region-select-item" href="#" data-region="{{ region }}">{{ region }}</a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 基站列表 -->
+                    <div class="overflow-auto" style="max-height: 400px;">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="btsMasterCheckbox"></th>
+                                    <th>基站ID</th>
+                                    <th>基站名称</th>
+                                    <th>地区号</th>
+                                </tr>
+                            </thead>
+                            <tbody id="btsTableBody">
+                                {% regroup bts_list by region_code as bts_by_region %}
+                                {% for region_group in bts_by_region %}
+                                    {% for bts in region_group.list|dictsort:"bts_id" %}
+                                    <tr>
+                                        <td><input type="checkbox" class="bts-checkbox" data-bts-id="{{ bts.bts_id }}" data-region="{{ bts.region_code }}"></td>
+                                        <td>{{ bts.bts_id }}</td>
+                                        <td>{{ bts.bts_name }}</td>
+                                        <td>{{ bts.region_code|default:"-" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 端站选择和操作区域 -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">端站列表</h5>
+                </div>
+                <div class="card-body">
+                    <!-- 端站列表 -->
+                    <div class="overflow-auto" style="max-height: 400px;">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="terminalMasterCheckbox"></th>
+                                    <th>端站信息</th>
+                                    <th>IP地址</th>
+                                    <th>端口</th>
+                                </tr>
+                            </thead>
+                            <tbody id="terminalTableBody">
+                                {% for terminal in terminals %}
+                                <tr>
+                                    <td><input type="checkbox" class="terminal-checkbox" data-sn="{{ terminal.sn }}" data-ip_address="{{ terminal.ip_address|default:'' }}" data-port_number="{{ terminal.port_number|default:'' }}"></td>
+                                    <td>{{ terminal.ship.ship_name }}-{{ terminal.sn }}</td>
+                                    <td>{{ terminal.ip_address|default:'-' }}</td>
+                                    <td>{{ terminal.port_number|default:'-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮和结果区域 -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center">
+                        <button type="button" class="btn btn-success btn-lg" id="updateBtsInfoBtn">更新基站信息</button>
+                    </div>
+                    
+                    <div class="mt-4" id="operationResult" style="display: none;">
+                        <div class="alert" role="alert" id="resultMessage"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="{% static 'js/stationimport.js' %}"></script>
+{% endblock %}

@@ -194,6 +194,11 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['update_type'] = frontend_payload.get('update_type')
                 payload['file_name'] = frontend_payload.get('file_name')
 
+            elif module == 'station_import':            # 基站导入
+                payload['op'] = 'update'
+                payload['op_sub'] = 'base_station_import'
+                payload['station_list'] = frontend_payload.get('station_list')
+
             else:                                                   # default
                 gl_logger.error(f"收到了一个未知的控制模块: {module}")
                 raise ValueError("未知的控制模块")

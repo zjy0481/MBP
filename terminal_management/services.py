@@ -418,3 +418,41 @@ def get_latest_report_for_gis_by_sn(sn):
         return (False, f"SN为 '{sn}' 的端站不存在。")
     except Exception as e:
         return (False, f"为GIS查询最新上报记录时发生错误: {e}")
+
+
+# =============================================================================
+# 基站导入页面 (StationImport) 操作函数
+# =============================================================================
+
+def get_base_stations_by_region():
+    """
+    获取所有基站信息，按地区号和基站ID排序。
+    """
+    try:
+        stations = BaseStationInfo.objects.all().order_by('region_code', 'bts_id')
+        return (True, stations)
+    except Exception as e:
+        return (False, f"获取基站列表时发生错误: {e}")
+
+def get_distinct_region_codes():
+    """
+    获取去重的地区号列表，并按地区号排序。
+    """
+    try:
+        # 使用 values_list 获取指定字段的值列表，distinct() 去重，order_by() 排序
+        region_codes = BaseStationInfo.objects.values_list('region_code', flat=True).distinct().order_by('region_code')
+        # 将 QuerySet 转换为列表
+        return (True, list(region_codes))
+    except Exception as e:
+        return (False, f"获取地区号列表时发生错误: {e}")
+
+def get_terminals_with_ship_info():
+    """
+    获取带船舶信息的端站列表，按船名和SN排序。
+    """
+    try:
+        # 使用 select_related 预加载 ship 外键关联的对象，避免N+1查询
+        terminals = TerminalInfo.objects.select_related('ship').all().order_by('ship__ship_name', 'sn')
+        return (True, terminals)
+    except Exception as e:
+        return (False, f"获取端站列表时发生错误: {e}")

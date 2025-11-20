@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}船舶端站管理系统{% endblock %}</title>
-    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { display: flex; min-height: 100vh; flex-direction: column; }
         .main-container { display: flex; flex: 1; }
@@ -45,6 +45,9 @@
                     <a class="nav-link" href="{% url 'systemmanage' %}">端站系统管理</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="{% url 'stationimport' %}">基站导入</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="{% url 'ship_list' %}">船舶管理</a>
                 </li>
                 <li class="nav-item">
@@ -64,7 +67,7 @@
     </div>
 
     <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script> -->
-    <script src="../static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
 
     <script>
         window.dataSocket = new WebSocket(

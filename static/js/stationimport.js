@@ -65,8 +65,8 @@ function bindEventListeners() {
     document.getElementById('selectNoneBts').addEventListener('click', selectNoneBts);
     // 基站主复选框
     document.getElementById('btsMasterCheckbox').addEventListener('change', toggleAllBts);
-    // 端站主复选框
-    document.getElementById('terminalMasterCheckbox').addEventListener('change', toggleAllTerminals);
+    // 端站主复选框已移除，不再需要此事件监听
+    // document.getElementById('terminalMasterCheckbox').addEventListener('change', toggleAllTerminals);
     // 更新基站信息按钮
     document.getElementById('updateBtsInfoBtn').addEventListener('click', updateBtsInfo);
     // 按地区选择基站
@@ -77,9 +77,9 @@ function bindEventListeners() {
             selectBtsByRegion(region);
         });
     });
-    // 端站复选框点击事件，用于记录当前选中的端站
-    document.querySelectorAll('.terminal-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+    // 端站单选框点击事件，用于记录当前选中的端站
+    document.querySelectorAll('.terminal-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
             if (this.checked) {
                 currentTerminalSN = this.getAttribute('data-sn');
                 console.log('当前选中端站:', currentTerminalSN);
@@ -130,13 +130,13 @@ function toggleAllBts() {
     });
 }
 
-// 切换所有端站选择状态
-function toggleAllTerminals() {
-    const isChecked = document.getElementById('terminalMasterCheckbox').checked;
-    document.querySelectorAll('.terminal-checkbox').forEach(checkbox => {
-        checkbox.checked = isChecked;
-    });
-}
+// 切换所有端站选择状态 - 不再需要，因为已改为单选框
+// function toggleAllTerminals() {
+//     const isChecked = document.getElementById('terminalMasterCheckbox').checked;
+//     document.querySelectorAll('.terminal-checkbox').forEach(checkbox => {
+//         checkbox.checked = isChecked;
+//     });
+// }
 
 // 更新主复选框状态
 function updateMasterCheckboxState(masterId, checkboxClass) {
@@ -169,88 +169,94 @@ function getSelectedBts() {
 }
 
 // 获取选中的端站
-function getSelectedTerminals() {
-    const selectedTerminals = [];
-    document.querySelectorAll('.terminal-checkbox:checked').forEach(checkbox => {
+function getSelectedTerminal() {
+    let selectedTerminals = null;
+    const checkedRadio = document.querySelector('.terminal-radio:checked');
+    
+    if (checkedRadio) {
         // 获取端站的SN、IP和端口信息
-        const sn = checkbox.getAttribute('data-sn');
-        const ip_address = checkbox.getAttribute('data-ip_address');
-        const port_number = checkbox.getAttribute('data-port_number');
+        currentTerminalSN = checkedRadio.getAttribute('data-sn');   // 再次更新currentTerminalSN，确保该全局变量与所选端站同步
+        const sn = checkedRadio.getAttribute('data-sn');
+        const ip_address = checkedRadio.getAttribute('data-ip_address');
+        const port_number = checkedRadio.getAttribute('data-port_number');
 
         // console.log(`端站信息 - SN: ${sn}, IP: ${ip_address || ''}, Port: ${port_number || ''}`);
         
-        selectedTerminals.push({
+        selectedTerminals = {
             sn: sn,
             ip_address: ip_address || '',
             port_number: port_number || ''
-        });
-    });
+        };
+    }
     return selectedTerminals;
 }
 
 // 更新基站信息
 function updateBtsInfo() {
     const selectedBts = getSelectedBts();
-    const selectedTerminals = getSelectedTerminals();
+    const selectedTerminals = getSelectedTerminal();
     
     if (selectedBts.length === 0) {
         showResultMessage('请至少选择一个基站', 'alert-warning');
         return;
     }
     
-    if (selectedTerminals.length === 0) {
-        showResultMessage('请至少选择一个端站', 'alert-warning');
+    if (!selectedTerminals) {
+        showResultMessage('请选择一个端站', 'alert-warning');
         return;
     }
     
-    // 发送消息给每个选中的端站
+    // 发送消息给选中的端站（现在只有一个）
     sendMessageToTerminals(selectedTerminals, selectedBts);
     
-    showResultMessage(`正在向 ${selectedTerminals.length} 个端站发送基站信息...`, 'alert-info');
+    showResultMessage(`正在向端站sn: ${selectedTerminals.sn}发送基站信息...`, 'alert-info');
 }
 
 // 向端站发送消息
-function sendMessageToTerminals(terminals, stationList) {
+function sendMessageToTerminals(terminal, stationList) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         showResultMessage('WebSocket连接未建立，无法发送消息', 'alert-danger');
         return;
     }
+
+    if (currentTerminalSN !== terminal.sn) {
+        showResultMessage(`currentTerminalSN与选中的端站SN不匹配: ${currentTerminalSN} !== ${terminal.sn}`, 'alert-danger');
+        return;
+    }
     
-    // 为每个选中的端站单独发送消息
-    terminals.forEach((terminal, index) => {
-        const terminalSN = terminal.sn;
-        const terminalIP = terminal.ip_address;
-        const terminalPort = terminal.port_number;
-        
-        // 按照协议文档构造消息
-        const payload = {
-            sn: terminalSN, // 每个消息的sn字段与对应端站匹配
-            op: "update",
-            op_sub: "base_station_import",
-            station_list: stationList // 直接使用原始对象，避免双重JSON序列化
-        };
-        
-        console.log(`发送基站导入消息给端站 ${terminalSN}:`, payload);
-        console.log(`端站信息 - SN: ${terminalSN}, IP: ${terminalIP}, Port: ${terminalPort}`);
+    // 为选中的端站发送消息
+    const terminalSN = currentTerminalSN;
+    const terminalIP = terminal.ip_address;
+    const terminalPort = terminal.port_number;
+    
+    // 按照协议文档构造消息
+    const payload = {
+        sn: terminalSN, // 消息的sn字段与端站匹配
+        op: "update",
+        op_sub: "base_station_import",
+        station_list: stationList // 直接使用原始对象，避免双重JSON序列化
+    };
+    
+    console.log(`发送基站导入消息给端站 ${terminalSN}:`, payload);
+    console.log(`端站信息 - SN: ${terminalSN}, IP: ${terminalIP}, Port: ${terminalPort}`);
 
-        // 构造最终消息对象
-        const message = {
-            type: 'control_command',
-            sn: terminalSN,
-            ip: terminalIP,
-            port: terminalPort,
-            module: 'station_import', // 设置默认模块名称
-            payload: payload
-        };
+    // 构造最终消息对象
+    const message = {
+        type: 'control_command',
+        sn: terminalSN,
+        ip: terminalIP,
+        port: terminalPort,
+        module: 'station_import', // 设置默认模块名称
+        payload: payload
+    };
 
-        // 发送消息
-        ws.send(JSON.stringify(message));
-        
-        // 为避免消息发送过快，可以添加一个小延迟
-        if (index < terminals.length - 1) {
-            setTimeout(() => {}, 100);
-        }
-    });
+    // 发送消息
+    ws.send(JSON.stringify(message));
+    
+    // 为避免消息发送过快，可以添加一个小延迟
+    // if (index < terminal.length - 1) {
+    //     setTimeout(() => {}, 100);
+    // }
 }
 
 // 处理基站导入响应
@@ -259,7 +265,7 @@ function handleStationImportResponse(message) {
     
     // 情况1: 通信级别的错误
     if (message.success === false) {
-        const errorMessage = message.error || "操作失败：通信错误";
+        const errorMessage = `更新sn: ${currentTerminalSN}的基站信息失败，失败原因：${message.error || "操作失败：通信错误"}`;
         addMessageToQueue(errorMessage, 'alert-danger');
         return;
     }

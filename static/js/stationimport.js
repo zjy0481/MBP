@@ -358,10 +358,20 @@ function displayMessageFromQueue() {
     // 确保messagesContainer有正确的样式
     if (!messagesContainer.classList.contains('messages-container')) {
         messagesContainer.classList.add('messages-container');
-        messagesContainer.style.position = 'relative';
-        messagesContainer.style.display = 'block';
+        messagesContainer.style.position = 'fixed';
+        messagesContainer.style.top = '10%';
+        messagesContainer.style.left = '0';
+        messagesContainer.style.right = '0';
+        messagesContainer.style.display = 'flex';
+        messagesContainer.style.flexDirection = 'column';
+        messagesContainer.style.alignItems = 'center';
+        messagesContainer.style.justifyContent = 'flex-start';
         messagesContainer.style.padding = '0';
-        messagesContainer.style.margin = '10px 0';
+        messagesContainer.style.margin = '0';
+        messagesContainer.style.maxWidth = '80%';
+        messagesContainer.style.marginLeft = 'auto';
+        messagesContainer.style.marginRight = 'auto';
+        messagesContainer.style.zIndex = '9999';
     }
     
     // 获取当前可见的消息数量

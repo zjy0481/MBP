@@ -3,11 +3,6 @@
 // 全局变量
 let ws = null;
 let currentTerminalSN = null;
-let messageQueue = []; // 消息队列
-let maxVisibleMessages = 3; // 最大可见消息数量
-let successResponses = []; // 短时间内的成功响应集合
-let successResponseTimer = null; // 成功响应合并定时器
-const successMergeTimeout = 3000; // 成功响应合并超时时间（毫秒）
 
 // 初始化函数
 function init() {
@@ -197,30 +192,30 @@ function updateBtsInfo() {
     const selectedTerminals = getSelectedTerminal();
     
     if (selectedBts.length === 0) {
-        showResultMessage('请至少选择一个基站', 'alert-warning');
+        warningMessage('请至少选择一个基站');
         return;
     }
     
     if (!selectedTerminals) {
-        showResultMessage('请选择一个端站', 'alert-warning');
+        warningMessage('请选择一个端站');
         return;
     }
     
     // 发送消息给选中的端站（现在只有一个）
     sendMessageToTerminals(selectedTerminals, selectedBts);
     
-    showResultMessage(`正在向端站sn: ${selectedTerminals.sn}发送基站信息...`, 'alert-info');
+    infoMessage(`正在向端站sn: ${selectedTerminals.sn}发送基站信息...`);
 }
 
 // 向端站发送消息
 function sendMessageToTerminals(terminal, stationList) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-        showResultMessage('WebSocket连接未建立，无法发送消息', 'alert-danger');
+        errorMessage('WebSocket连接未建立，无法发送消息');
         return;
     }
 
     if (currentTerminalSN !== terminal.sn) {
-        showResultMessage(`currentTerminalSN与选中的端站SN不匹配: ${currentTerminalSN} !== ${terminal.sn}`, 'alert-danger');
+        errorMessage(`currentTerminalSN与选中的端站SN不匹配: ${currentTerminalSN} !== ${terminal.sn}`);
         return;
     }
     
@@ -265,15 +260,15 @@ function handleStationImportResponse(message) {
     
     // 情况1: 通信级别的错误
     if (message.success === false) {
-        const errorMessage = `更新sn: ${currentTerminalSN}的基站信息失败，失败原因：${message.error || "操作失败：通信错误"}`;
-        addMessageToQueue(errorMessage, 'alert-danger');
+        const errorMsg = `更新sn: ${currentTerminalSN}的基站信息失败，失败原因：${message.error || "操作失败：通信错误"}`;
+        errorMessage(errorMsg);
         return;
     }
     
     // 检查是否有data字段
     if (!message.data) {
         console.error("响应格式不正确，缺少data字段:", message);
-        addMessageToQueue("响应格式错误：缺少必要数据", 'alert-danger');
+        errorMessage("响应格式错误：缺少必要数据");
         return;
     }
     
@@ -281,173 +276,21 @@ function handleStationImportResponse(message) {
     
     // 情况2: 端站级别的错误
     if (data.result === 1) {
-        const errorMessage = `更新sn: ${data.sn}的基站信息失败，失败原因：${data.error || '未知错误'}`;
-        addMessageToQueue(errorMessage, 'alert-danger');
+        const errorMsg = `更新sn: ${data.sn}的基站信息失败，失败原因：${data.error || '未知错误'}`;
+        errorMessage(errorMsg);
         return;
     }
     
     // 情况3: 更新成功
     if (data.result === 0) {
-        // 添加到成功响应集合
-        successResponses.push(data.sn);
-        
-        // 清除之前的定时器
-        if (successResponseTimer) {
-            clearTimeout(successResponseTimer);
-        }
-        
-        // 更新成功消息并重置定时器
-        updateSuccessMessage();
-        
-        // 设置新的定时器，用于清空成功响应集合
-        successResponseTimer = setTimeout(() => {
-            successResponses = [];
-            successResponseTimer = null;
-        }, successMergeTimeout);
+        const successMessage = `成功更新了sn: ${data.sn}的基站信息`;
+        infoMessage(successMessage);
     }
 }
 
-// 添加消息到队列
-function addMessageToQueue(message, alertClass) {
-    // 创建消息对象
-    const messageObj = {
-        content: message,
-        type: alertClass,
-        id: Date.now(), // 唯一ID用于标识
-        element: null   // 将在显示时设置为DOM元素引用
-    };
-    
-    // 添加到队列
-    messageQueue.push(messageObj);
-    
-    // 尝试显示消息
-    displayMessageFromQueue();
-}
+// 移除了消息队列系统，改用base.html中提供的全局函数
 
-// 更新成功消息
-function updateSuccessMessage() {
-    // 查找已存在的成功消息
-    const existingSuccessMessageIndex = messageQueue.findIndex(
-        msg => msg.type === 'alert-success' && msg.content.includes('成功更新了')
-    );
-    
-    if (existingSuccessMessageIndex >= 0) {
-        // 更新现有成功消息的内容
-        const messageObj = messageQueue[existingSuccessMessageIndex];
-        const snList = successResponses.map(sn => `sn: ${sn}`).join('，');
-        messageObj.content = `成功更新了${snList}的基站信息`;
-        
-        // 如果消息已经显示，更新DOM
-        if (messageObj.element) {
-            messageObj.element.textContent = messageObj.content;
-            
-            // 重置自动隐藏时间
-            resetMessageTimeout(messageObj);
-        }
-    } else {
-        // 创建新的成功消息
-        addMessageToQueue(`成功更新了sn: ${successResponses[successResponses.length - 1]}的基站信息`, 'alert-success');
-    }
-}
-
-// 从队列显示消息
-function displayMessageFromQueue() {
-    const messagesContainer = document.getElementById('operationResult');
-    if (!messagesContainer) return;
-    
-    // 确保messagesContainer有正确的样式
-    if (!messagesContainer.classList.contains('messages-container')) {
-        messagesContainer.classList.add('messages-container');
-        messagesContainer.style.position = 'fixed';
-        messagesContainer.style.top = '10%';
-        messagesContainer.style.left = '0';
-        messagesContainer.style.right = '0';
-        messagesContainer.style.display = 'flex';
-        messagesContainer.style.flexDirection = 'column';
-        messagesContainer.style.alignItems = 'center';
-        messagesContainer.style.justifyContent = 'flex-start';
-        messagesContainer.style.padding = '0';
-        messagesContainer.style.margin = '0';
-        messagesContainer.style.maxWidth = '80%';
-        messagesContainer.style.marginLeft = 'auto';
-        messagesContainer.style.marginRight = 'auto';
-        messagesContainer.style.zIndex = '9999';
-    }
-    
-    // 获取当前可见的消息数量
-    const visibleMessages = messagesContainer.querySelectorAll('.message-item').length;
-    
-    // 如果队列中有消息且可见消息数量少于最大限制，显示下一条
-    if (messageQueue.length > 0 && visibleMessages < maxVisibleMessages) {
-        const messageObj = messageQueue[0];
-        
-        // 创建消息元素
-        const messageElement = document.createElement('div');
-        messageElement.className = `alert ${messageObj.type} message-item`;
-        messageElement.textContent = messageObj.content;
-        messageElement.dataset.messageId = messageObj.id;
-        messageElement.style.margin = '5px 0';
-        messageElement.style.padding = '10px';
-        messageElement.style.borderRadius = '4px';
-        messageElement.style.transition = 'all 0.3s ease';
-        messageElement.style.opacity = '0';
-        messageElement.style.transform = 'translateY(10px)';
-        
-        // 将消息元素引用保存到消息对象
-        messageObj.element = messageElement;
-        
-        // 添加到容器
-        messagesContainer.appendChild(messageElement);
-        
-        // 触发动画显示
-        setTimeout(() => {
-            messageElement.style.opacity = '1';
-            messageElement.style.transform = 'translateY(0)';
-        }, 10);
-        
-        // 为所有消息设置自动隐藏定时器
-        resetMessageTimeout(messageObj);
-        
-        // 从队列中移除已显示的消息
-        messageQueue.shift();
-        
-        // 递归检查是否还有消息可以显示
-        setTimeout(() => displayMessageFromQueue(), 50);
-    }
-}
-
-// 重置消息的自动隐藏定时器
-function resetMessageTimeout(messageObj) {
-    // 清除现有的定时器
-    if (messageObj.timeoutId) {
-        clearTimeout(messageObj.timeoutId);
-    }
-    
-    // 设置新的定时器
-    messageObj.timeoutId = setTimeout(() => {
-        if (messageObj.element) {
-            // 触发淡出动画
-            messageObj.element.style.opacity = '0';
-            messageObj.element.style.transform = 'translateY(-10px)';
-            
-            // 动画结束后移除元素
-            setTimeout(() => {
-                if (messageObj.element && messageObj.element.parentNode) {
-                    messageObj.element.parentNode.removeChild(messageObj.element);
-                    messageObj.element = null;
-                    
-                    // 检查是否需要显示队列中的下一条消息
-                    displayMessageFromQueue();
-                }
-            }, 300);
-        }
-    }, 5000); // 5秒后隐藏
-}
-
-// 显示结果消息（更新为使用消息队列系统）
-function showResultMessage(message, alertClass) {
-    addMessageToQueue(message, alertClass);
-}
+// 移除了消息队列系统相关函数，改用base.html中提供的全局函数
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', init);

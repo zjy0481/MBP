@@ -330,7 +330,7 @@ function onSocketReady() {
             const reports = await response.json();
 
             if (reports.length === 0) {
-                console.warn("在选定时间段内没有符合要求的上报数据");
+                warnMessage("在选定时间段内没有符合要求的上报数据");
                 return;
             }
 
@@ -394,10 +394,10 @@ function onSocketReady() {
                 }
             }
             
-            console.log("设置已应用成功！轨迹已更新。");
+            infoMessage("设置已应用成功！轨迹已更新。");
 
         } catch (error) {
-            console.error("加载轨迹数据时发生错误:", error);
+            errorMessage("加载轨迹数据时发生错误:", error);
         }
     }
     
@@ -414,7 +414,7 @@ function onSocketReady() {
             shouldDraw = false;
         } else if (timeOption === 'custom') {
             if (!startTimeInput.value || !endTimeInput.value) {
-                console.warn("自定义时间模式下，开始和结束时间不能为空。");
+                warnMessage("自定义时间模式下，开始和结束时间不能为空。");
                 shouldDraw = false;
             }
             startTime = new Date(startTimeInput.value);
@@ -451,7 +451,7 @@ function onSocketReady() {
         const distVal = parseInt(distanceInput.value, 10);
         if (isNaN(distVal) || distVal < 100 || distVal > 50000) { alert("请输入100~50000之间的任意整数作为最小距离。"); return; }
         const sn = activeShip.dataset.sn;
-        if (!sn) { console.error("发生了一个内部错误，无法识别当前船只。"); return; }
+        if (!sn) { errorMessage("发生了一个内部错误，无法识别当前船只。"); return; }
         // console.log("handleConfirmClick调用fetchAndDrawPath");
         fetchAndDrawPath(sn);
     }

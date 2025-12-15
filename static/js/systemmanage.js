@@ -23,16 +23,16 @@ function onSocketReady() {
             
             if (responseData.hasOwnProperty('result')) {    // 处理端站响应级别的失败
                 if (responseData.result === '0') {
-                    console.log(`操作 ${module} 成功！`);
+                    infoMessage(`操作 ${module} 成功！`);
                 } else {
-                    let errorMessage = `操作 ${module} 失败。`;
+                    let errorMsg = `操作 ${module} 失败。`;
                     if (responseData.error) {
-                        errorMessage += `\n错误信息: ${responseData.error}`;
+                        errorMsg += `\n错误信息: ${responseData.error}`;
                     }
-                    console.error(errorMessage);
+                    errorMessage(errorMsg);
                 }
             } else {
-                console.log(`操作成功！模块: ${module}`);
+                infoMessage(`操作成功！模块: ${module}`);   //! 可能要修改？
 
                 // 根据模块处理响应
             switch (message.module) {
@@ -61,7 +61,7 @@ function onSocketReady() {
 
         } else {
             // 这部分逻辑处理WebSocket通信级别的失败（如超时），保持不变
-            console.error(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
+            errorMessage(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
         }
     };
 
@@ -72,30 +72,81 @@ function onSocketReady() {
     }
 
     // --- UI 更新与辅助函数 ---
-    function setStatus(elementId, text, isSuccess) {
+    function setStatus(elementId, text, mode) {
         const el = document.getElementById(elementId);
         if (el) {
             el.innerText = text;
-            el.className = isSuccess ? 'form-text mt-2 text-success' : 'form-text mt-2 text-danger';
+            // 根据mode值设置不同的CSS类
+            switch(mode) {
+                case 0:
+                    el.className = 'form-text mt-2';
+                    break;
+                case 1:
+                    el.className = 'form-text mt-2 text-success';
+                    break;
+                case 2:
+                    el.className = 'form-text mt-2 text-danger';
+                    break;
+                default:
+                    el.className = 'form-text mt-2';
+            }
+        }
+    }
+    
+    function setInputValue(elementId, value) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            // 根据元素类型处理不同的表单控件
+            switch(el.tagName.toLowerCase()) {
+                case 'input':
+                    // 日期时间选择器需要特殊处理格式
+                    if (el.type === 'datetime-local') {
+                        // 确保value是有效的ISO格式（YYYY-MM-DDTHH:MM）
+                        if (value && value.includes(' ')) {
+                            // 如果是"YYYY-MM-DD HH:MM"格式，转换为"YYYY-MM-DDTHH:MM"
+                            value = value.replace(' ', 'T');
+                        }
+                    }
+                    el.value = value;
+                    break;
+                case 'select':
+                    // 选择框需要确保value存在于选项中
+                    if (value !== '' && Array.from(el.options).some(opt => opt.value === value)) {
+                        el.value = value;
+                    } else {
+                        // 如果值不存在或为空，选择第一个选项
+                        el.selectedIndex = 0;
+                    }
+                    break;
+                default:
+                    // 其他输入元素直接设置value
+                    el.value = value;
+            }
         }
     }
     
     function resetAllStatus() {
         // // 重置工作模式
         // document.getElementById('work_mode').value = "";
-        // setStatus('work_mode_status', '当前模式：暂无数据', false);
+        // setStatus('work_mode_status', '当前模式：暂无数据', 0);
         // 重置RTC
-        document.getElementById('datetime_rtc').value = new Date().toISOString().slice(0, 16);
-        setStatus('rtc_status', '端站当前RTC时间：暂无数据', false);
+        // 获取东八区(UTC+8)的当前时间
+        const now = new Date();
+        // 创建东八区时间对象（UTC时间加8小时）
+        const beijingTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+        // 转换为ISO格式并截取到分钟部分
+        const beijingTimeISO = beijingTime.toISOString().slice(0, 16);
+        setInputValue('datetime_rtc', beijingTimeISO);
+        setStatus('rtc_status', '端站当前RTC时间：暂无数据', 0);
         // 重置上报参数
-        document.getElementById('report_ip').value = '';
-        document.getElementById('report_port').value = '';
-        document.getElementById('report_mode').value = '';
-        document.getElementById('report_interval').value = '';
-        setStatus('report_ip_status', '端站当前IP地址：暂无数据', false);
-        setStatus('report_port_status', '端站当前端口号：暂无数据', false);
-        setStatus('report_mode_status', '端站当前上报方式：暂无数据', false);
-        setStatus('report_interval_status', '端站当前上报时间间隔：暂无数据', false);
+        setInputValue('report_ip','暂无数据');
+        setInputValue('report_port','暂无数据');
+        setInputValue('report_mode','');
+        setInputValue('report_interval','');
+        setStatus('report_ip_status', '端站当前IP地址：暂无数据', 0);
+        setStatus('report_port_status', '端站当前端口号：暂无数据', 0);
+        setStatus('report_mode_status', '端站当前上报方式：暂无数据', 0);
+        setStatus('report_interval_status', '端站当前上报时间间隔：暂无数据', 0);
         // 重置版本信息
         ['model', 'hw', 'adu', 'acu', 'stru'].forEach(v => document.getElementById(`version_${v}`).value = '');
     }
@@ -114,32 +165,36 @@ function onSocketReady() {
 
     function handleRtcResponse(data) {
         if (data && data.op === 'query_ans' && data.op_sub === 'RTC') {
-            setStatus('rtc_status', `端站当前RTC时间：${data.date} ${data.time}`, true);
+            // 更新日期时间选择器
+            const datetimeValue = `${data.date} ${data.time}`;
+            setInputValue('datetime_rtc', datetimeValue);
+            setStatus('rtc_status', `端站当前RTC时间：${datetimeValue}`, 1);
         } else {
-            setStatus('rtc_status', '查询失败：端站响应格式错误', false);
+            setStatus('rtc_status', '查询失败：端站响应格式错误', 2);
         }
     }
 
     function handleReportConfigResponse(data) {
         if (data && data.op === 'query_ans' && data.op_sub === 'report_config') {
-            document.getElementById('report_ip').value = data.ip || '';
-            document.getElementById('report_port').value = data.port || '';
-            document.getElementById('report_mode').value = data.mode || '';
-            document.getElementById('report_RTC').value = data.RTC || '';
-            document.getElementById('report_interval').value = data.interval || '';
+            // 使用setInputValue函数更新表单控件
+            setInputValue('report_ip', data.ip || '');
+            setInputValue('report_port', data.port || '');
+            setInputValue('report_mode', data.mode || '');
+            setInputValue('report_RTC', data.RTC || '');
+            setInputValue('report_interval', data.interval || '');
             const modeMap = {'0': '不上报', '1': '通过CPE上报', '2': '通过NB上报'};
             const RTCMap = {'0': '上报RTC时间', '1': '不上报RTC时间'};
-            setStatus('report_ip_status', `端站当前IP地址：${data.ip || 'N/A'}`, true);
-            setStatus('report_port_status', `端站当前端口号：${data.port || 'N/A'}`, true);
-            setStatus('report_mode_status', `端站当前上报方式：${modeMap[data.mode] || '未知'}`, true);
-            setStatus('report_mode_status', `端站当前是否上报RTC：${RTCMap[data.RTC] || '未知'}`, true);
-            setStatus('report_interval_status', `端站当前上报时间间隔：${data.interval || 'N/A'}秒`, true);
+            setStatus('report_ip_status', `端站当前IP地址：${data.ip || 'N/A'}`, 1);
+            setStatus('report_port_status', `端站当前端口号：${data.port || 'N/A'}`, 1);
+            setStatus('report_mode_status', `端站当前上报方式：${modeMap[data.mode] || '未知'}`, 1);
+            setStatus('report_mode_status', `端站当前是否上报RTC：${RTCMap[data.RTC] || '未知'}`, 1);
+            setStatus('report_interval_status', `端站当前上报时间间隔：${data.interval || 'N/A'}秒`, 1);
         } else {
-            setStatus('report_ip_status', '查询失败：端站响应格式错误', false);
-            setStatus('report_port_status', '查询失败：端站响应格式错误', false);
-            setStatus('report_mode_status', '查询失败：端站响应格式错误', false);
-            setStatus('report_mode_status', '查询失败：端站响应格式错误', false);
-            setStatus('report_interval_status', '查询失败：端站响应格式错误', false);
+            setStatus('report_ip_status', '查询失败：端站响应格式错误', 2);
+            setStatus('report_port_status', '查询失败：端站响应格式错误', 2);
+            setStatus('report_mode_status', '查询失败：端站响应格式错误', 2);
+            setStatus('report_mode_status', '查询失败：端站响应格式错误', 2);
+            setStatus('report_interval_status', '查询失败：端站响应格式错误', 2);
 
         }
     }
@@ -164,7 +219,7 @@ function onSocketReady() {
         uploadBtn.addEventListener('click', () => {
             const file = fileInput.files[0];
             if (!file) {
-                alert('请先选择一个文件！');
+                warningMessage('请先选择一个文件！');
                 return;
             }
 
@@ -180,7 +235,7 @@ function onSocketReady() {
                 console.log('文件上传指令已发送，请等待设备响应...');
             };
             reader.onerror = () => {
-                console.error('读取文件时发生错误！');
+                errorMessage('读取文件时发生错误！');
             };
             reader.readAsDataURL(file); // 将文件读取为 Base64 编码的字符串
         });
@@ -189,7 +244,7 @@ function onSocketReady() {
         upgradeBtn.addEventListener('click', () => {
             const file = fileInput.files[0];
             if (!file) {
-                alert('请先选择一个文件！');
+                warningMessage('请先选择一个文件！');
                 return;
             }
             sendControlCommand('software_update', {

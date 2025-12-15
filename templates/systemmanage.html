@@ -4,6 +4,14 @@
 {% block page_title %}端站系统管理{% endblock %}
 
 {% block interactive_content %}
+<style>
+    /* 为表单标签设置固定宽度，使分隔处对齐 */
+    .input-group-text {
+        min-width: 150px;
+        text-align: right;
+        padding-right: 15px;
+    }
+</style>
 
 <!-- <fieldset class="mb-3">
     <legend>工作模式</legend>
@@ -54,7 +62,7 @@
                     <label for="report_port" class="col-form-label">端口号</label>
                 </div>
                 <div class="col">
-                    <input type="number" id="report_port" class="form-control">
+                    <input type="text" id="report_port" class="form-control">
                 </div>
             </div>
             <div id="report_port_status" class="form-text">端站当前端口号：暂无数据</div>
@@ -99,7 +107,7 @@
                     <label for="report_interval" class="col-form-label">上报时间间隔 (秒)</label>
                 </div>
                 <div class="col">
-                    <input type="number" id="report_interval" class="form-control">
+                    <input type="text" id="report_interval" class="form-control">
                 </div>
             </div>
             <div id="report_interval_status" class="form-text">端站当前上报时间间隔：暂无数据</div>

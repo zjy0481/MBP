@@ -100,7 +100,7 @@ function onSocketReady() {
                             pitchLimitState: responseData.pitch_lim_stat === 0 ? 0 : 1,
                         };
                         showDevicesStatus(statusMap);
-                        console.log('设备状态查询成功！');
+                        infoMessage('设备状态查询成功！');
                     }
                 }
                 // // 手动控制天线旋转
@@ -115,7 +115,7 @@ function onSocketReady() {
                 // }
 
             } else {
-                console.error(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
+                errorMessage(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
             }
         }
     };

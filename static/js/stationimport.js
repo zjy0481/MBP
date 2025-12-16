@@ -60,8 +60,6 @@ function bindEventListeners() {
     document.getElementById('selectNoneBts').addEventListener('click', selectNoneBts);
     // 基站主复选框
     document.getElementById('btsMasterCheckbox').addEventListener('change', toggleAllBts);
-    // 端站主复选框已移除，不再需要此事件监听
-    // document.getElementById('terminalMasterCheckbox').addEventListener('change', toggleAllTerminals);
     // 更新基站信息按钮
     document.getElementById('updateBtsInfoBtn').addEventListener('click', updateBtsInfo);
     // 按地区选择基站
@@ -72,15 +70,58 @@ function bindEventListeners() {
             selectBtsByRegion(region);
         });
     });
-    // 端站单选框点击事件，用于记录当前选中的端站
-    document.querySelectorAll('.terminal-radio').forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.checked) {
-                currentTerminalSN = this.getAttribute('data-sn');
-                console.log('当前选中端站:', currentTerminalSN);
+    
+    // 新增：端站选择下拉菜单和搜索功能
+    const terminalSearch = document.getElementById('terminalSearch');
+    const selectedTerminalText = document.getElementById('selectedTerminalText');
+    
+    // 端站搜索功能
+    terminalSearch.addEventListener('input', function() {
+        const filter = this.value.toLowerCase();
+        // 每次搜索时重新获取选项列表，确保获取最新的DOM结构
+        const terminalOptions = document.querySelectorAll('.terminal-option');
+        
+        terminalOptions.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            if (text.includes(filter)) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
             }
         });
     });
+    
+    // 端站选择事件 - 使用事件委托来处理动态生成的选项
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('terminal-option')) {
+            e.preventDefault();
+            
+            // 获取选择的端站信息
+            currentTerminalSN = e.target.getAttribute('data-sn');
+            const shipName = e.target.getAttribute('data-ship-name');
+            
+            // 更新按钮显示的文本
+            selectedTerminalText.textContent = `${shipName} - ${currentTerminalSN}`;
+            
+            console.log('当前选中端站:', currentTerminalSN);
+            // 可以在这里添加加载端站当前基站列表的逻辑
+        }
+    });
+    
+    // 查询按钮事件
+    document.getElementById('queryBtsBtn').addEventListener('click', queryBtsInfo);
+    
+    // 新增行按钮事件
+    document.getElementById('addBaseStationRow').addEventListener('click', addBaseStationRow);
+    
+    // 将所选添加到列表按钮事件
+    document.getElementById('addToTerminalListBtn').addEventListener('click', addSelectedToTerminalList);
+    
+    // 使用所选覆盖列表按钮事件
+    document.getElementById('overwriteTerminalListBtn').addEventListener('click', overwriteTerminalList);
+    
+    // 初始化编辑功能
+    initCellEditing();
 }
 
 // 处理WebSocket消息
@@ -90,6 +131,10 @@ function handleWebSocketMessage(message) {
         // console.log('handleWebSocketMessage: 基站导入响应:', message.data);
         handleStationImportResponse(message);
         
+    }
+    else if (message.type === 'control_response' && message.module === 'query_station') {
+        console.log('handleWebSocketMessage: 查询基站信息响应:', message.data);
+        handleQueryResponse(message);
     }
 }
 
@@ -156,7 +201,9 @@ function getSelectedBts() {
             bts_id: btsId,
             bts_name: cells[2].textContent.trim(),
             region_code: cells[3].textContent.trim() !== '-' ? cells[3].textContent.trim() : '',
-            // 经度和纬度信息已从表格中移除
+            coverage_distance: cells[4].textContent.trim() !== '-' ? cells[4].textContent.trim() : '',
+            longitude: cells[5].textContent.trim() !== '-' ? cells[5].textContent.trim() : '',
+            latitude: cells[6].textContent.trim() !== '-' ? cells[6].textContent.trim() : ''
         });
     });
     console.log('选中的基站:', selectedBts);
@@ -165,50 +212,234 @@ function getSelectedBts() {
 
 // 获取选中的端站
 function getSelectedTerminal() {
-    let selectedTerminals = null;
-    const checkedRadio = document.querySelector('.terminal-radio:checked');
+    let selectedTerminal = null;
     
-    if (checkedRadio) {
-        // 获取端站的SN、IP和端口信息
-        currentTerminalSN = checkedRadio.getAttribute('data-sn');   // 再次更新currentTerminalSN，确保该全局变量与所选端站同步
-        const sn = checkedRadio.getAttribute('data-sn');
-        const ip_address = checkedRadio.getAttribute('data-ip_address');
-        const port_number = checkedRadio.getAttribute('data-port_number');
-
-        // console.log(`端站信息 - SN: ${sn}, IP: ${ip_address || ''}, Port: ${port_number || ''}`);
+    if (currentTerminalSN) {
+        // 查找对应的端站选项
+        const selectedOption = document.querySelector(`.terminal-option[data-sn="${currentTerminalSN}"]`);
         
-        selectedTerminals = {
-            sn: sn,
-            ip_address: ip_address || '',
-            port_number: port_number || ''
-        };
+        if (selectedOption) {
+            const ip_address = selectedOption.getAttribute('data-ip');
+            const port_number = selectedOption.getAttribute('data-port');
+
+            selectedTerminal = {
+                sn: currentTerminalSN,
+                ip_address: ip_address || '',
+                port_number: port_number || ''
+            };
+        }
     }
-    return selectedTerminals;
+    return selectedTerminal;
 }
 
-// 更新基站信息
-function updateBtsInfo() {
+// 新增行功能
+function addBaseStationRow() {
+    const tbody = document.getElementById('terminalBtsTableBody');
+    const newRow = document.createElement('tr');
+    
+    newRow.innerHTML = `
+        <td><input type="text" class="form-control form-control-sm bts-id-input" value="基站ID"></td>
+        <td><input type="text" class="form-control form-control-sm bts-name-input" value="基站名称"></td>
+        <td><input type="text" class="form-control form-control-sm bts-region-input" value="地区号"></td>
+        <td><input type="text" class="form-control form-control-sm bts-coverage-input" value="覆盖范围"></td>
+        <td><input type="text" class="form-control form-control-sm bts-longitude-input" value="经度"></td>
+        <td><input type="text" class="form-control form-control-sm bts-latitude-input" value="纬度"></td>
+        <td><button type="button" class="btn btn-danger btn-sm delete-row-btn">删除</button></td>
+    `;
+    
+    tbody.appendChild(newRow);
+    
+    // 为新行绑定事件
+    bindRowEvents(newRow);
+    
+    // 滚动到列表底部
+    tbody.parentNode.scrollTop = tbody.parentNode.scrollHeight;
+}
+
+// 绑定行事件（删除按钮和输入框事件）
+function bindRowEvents(row) {
+    // 删除按钮事件
+    const deleteBtn = row.querySelector('.delete-row-btn');
+    deleteBtn.addEventListener('click', function() {
+        row.remove();
+    });
+    
+    // 输入框焦点事件 - 点击时如果是默认值则清空
+    const inputs = row.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            if (this.value === '基站ID' || this.value === '基站名称' || this.value === '地区号' || 
+                this.value === '覆盖范围' || this.value === '经度' || this.value === '纬度') {
+                this.value = '';
+            }
+        });
+        
+        // 输入框失焦事件 - 如果为空则恢复默认值
+        input.addEventListener('blur', function() {
+            if (this.value.trim() === '') {
+                if (this.classList.contains('bts-id-input')) {
+                    this.value = '基站ID';
+                } else if (this.classList.contains('bts-name-input')) {
+                    this.value = '基站名称';
+                } else if (this.classList.contains('bts-region-input')) {
+                    this.value = '地区号';
+                } else if (this.classList.contains('bts-coverage-input')) {
+                    this.value = '覆盖范围';
+                } else if (this.classList.contains('bts-longitude-input')) {
+                    this.value = '经度';
+                } else if (this.classList.contains('bts-latitude-input')) {
+                    this.value = '纬度';
+                }
+            }
+        });
+        
+    });
+}
+
+// 初始化单元格编辑功能
+function initCellEditing() {
+    // 为现有行绑定事件（如果有）
+    const rows = document.querySelectorAll('#terminalBtsTableBody tr');
+    rows.forEach(row => bindRowEvents(row));
+}
+
+// 将所选添加到列表
+function addSelectedToTerminalList() {
     const selectedBts = getSelectedBts();
-    const selectedTerminals = getSelectedTerminal();
     
     if (selectedBts.length === 0) {
         warningMessage('请至少选择一个基站');
         return;
     }
     
-    if (!selectedTerminals) {
+    // 将选中的基站添加到端站内当前基站列表
+    addBtsToTerminalList(selectedBts);
+    
+    infoMessage(`已将${selectedBts.length}个基站添加到列表`);
+}
+
+// 使用所选覆盖列表
+function overwriteTerminalList() {
+    const selectedBts = getSelectedBts();
+    
+    if (selectedBts.length === 0) {
+        warningMessage('请至少选择一个基站');
+        return;
+    }
+    
+    // 清空端站内当前基站列表
+    const tbody = document.getElementById('terminalBtsTableBody');
+    tbody.innerHTML = '';
+    
+    // 将选中的基站添加到端站内当前基站列表
+    addBtsToTerminalList(selectedBts);
+    
+    infoMessage(`已使用${selectedBts.length}个基站覆盖列表`);
+}
+
+// 将基站添加到端站内当前基站列表
+function addBtsToTerminalList(btsList) {
+    const tbody = document.getElementById('terminalBtsTableBody');
+    
+    btsList.forEach(bts => {
+        const newRow = document.createElement('tr');
+        
+        newRow.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm bts-id-input" value="${bts.bts_id}"></td>
+            <td><input type="text" class="form-control form-control-sm bts-name-input" value="${bts.bts_name}"></td>
+            <td><input type="text" class="form-control form-control-sm bts-region-input" value="${bts.region_code || ''}"></td>
+            <td><input type="text" class="form-control form-control-sm bts-coverage-input" value="${bts.coverage_distance || ''}"></td>
+            <td><input type="text" class="form-control form-control-sm bts-longitude-input" value="${bts.longitude || ''}"></td>
+            <td><input type="text" class="form-control form-control-sm bts-latitude-input" value="${bts.latitude || ''}"></td>
+            <td><button type="button" class="btn btn-danger btn-sm delete-row-btn">删除</button></td>
+        `;
+        
+        tbody.appendChild(newRow);
+        
+        // 为新行绑定事件
+        bindRowEvents(newRow);
+    });
+}
+
+// 获取端站内当前基站列表中的所有基站
+function getTerminalBtsList() {
+    const btsList = [];
+    const rows = document.querySelectorAll('#terminalBtsTableBody tr');
+    
+    rows.forEach(row => {
+        const btsIdInput = row.querySelector('.bts-id-input');
+        const btsNameInput = row.querySelector('.bts-name-input');
+        const btsRegionInput = row.querySelector('.bts-region-input');
+        const btsCoverageInput = row.querySelector('.bts-coverage-input');
+        const btsLongitudeInput = row.querySelector('.bts-longitude-input');
+        const btsLatitudeInput = row.querySelector('.bts-latitude-input');
+        
+        // 确保所有输入框都存在
+        if (btsIdInput && btsNameInput && btsRegionInput && btsCoverageInput && btsLongitudeInput && btsLatitudeInput) {
+            const btsId = btsIdInput.value.trim();
+            const btsName = btsNameInput.value.trim();
+            const regionCode = btsRegionInput.value.trim();
+            const coverageDistance = btsCoverageInput.value.trim();
+            const longitude = btsLongitudeInput.value.trim();
+            const latitude = btsLatitudeInput.value.trim();
+            
+            // 确保基站ID不为空
+            if (btsId) {
+                btsList.push({
+                    bts_id: btsId,
+                    bts_name: btsName,
+                    region_code: regionCode,
+                    coverage_distance: coverageDistance,
+                    longitude: longitude,
+                    latitude: latitude
+                });
+            }
+        }
+    });
+    
+    console.log('端站内当前基站列表:', btsList);
+    return btsList;
+}
+
+// 查询基站信息
+function queryBtsInfo() {
+    const terminal = getSelectedTerminal();
+    
+    if (!terminal) {
+        warningMessage('请选择一个端站');
+        return;
+    }
+    
+    // 发送查询消息
+    sendQueryMessageToTerminal(terminal);
+    
+    infoMessage(`正在向端站sn: ${terminal.sn}查询基站信息...`);
+}
+
+// 更新基站信息
+function updateBtsInfo() {
+    const terminalBtsList = getTerminalBtsList();
+    const selectedTerminal = getSelectedTerminal();
+    
+    if (terminalBtsList.length === 0) {
+        warningMessage('端站内当前基站列表为空，请先添加基站');
+        return;
+    }
+    
+    if (!selectedTerminal) {
         warningMessage('请选择一个端站');
         return;
     }
     
     // 发送消息给选中的端站（现在只有一个）
-    sendMessageToTerminals(selectedTerminals, selectedBts);
+    sendSettingMessageToTerminal(selectedTerminal, terminalBtsList);
     
-    infoMessage(`正在向端站sn: ${selectedTerminals.sn}发送基站信息...`);
+    infoMessage(`正在向端站sn: ${selectedTerminal.sn}发送基站信息...`);
 }
 
 // 向端站发送消息
-function sendMessageToTerminals(terminal, stationList) {
+// 设置基站列表
+function sendSettingMessageToTerminal(terminal, stationList) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
         errorMessage('WebSocket连接未建立，无法发送消息');
         return;
@@ -219,7 +450,7 @@ function sendMessageToTerminals(terminal, stationList) {
         return;
     }
     
-    // 为选中的端站发送消息
+    // 向选中的端站发送消息
     const terminalSN = currentTerminalSN;
     const terminalIP = terminal.ip_address;
     const terminalPort = terminal.port_number;
@@ -254,6 +485,43 @@ function sendMessageToTerminals(terminal, stationList) {
     // }
 }
 
+// 查询基站信息
+function sendQueryMessageToTerminal(terminal) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        errorMessage('WebSocket连接未建立，无法发送消息');
+        return;
+    }
+
+    // 向选中的端站发送消息
+    const terminalSN = currentTerminalSN;
+    const terminalIP = terminal.ip_address;
+    const terminalPort = terminal.port_number;
+
+    // 按照协议文档构造消息
+    const payload = {
+        sn: terminalSN, // 消息的sn字段与端站匹配
+        op: "query",
+        op_sub: "base_station"
+    };
+
+    console.log(`发送查询请求给端站 ${terminalSN}:`, payload);
+    console.log(`端站信息 - SN: ${terminalSN}, IP: ${terminalIP}, Port: ${terminalPort}`);
+
+    // 构造最终消息对象
+    const message = {
+        type: 'control_command',
+        sn: terminalSN,
+        ip: terminalIP,
+        port: terminalPort,
+        module: 'query_station', // 设置默认模块名称
+        payload: payload
+    };
+
+    // 发送消息
+    ws.send(JSON.stringify(message));
+}
+
+// 处理响应消息
 // 处理基站导入响应
 function handleStationImportResponse(message) {
     console.log("收到基站导入响应:", message);
@@ -288,9 +556,55 @@ function handleStationImportResponse(message) {
     }
 }
 
-// 移除了消息队列系统，改用base.html中提供的全局函数
-
-// 移除了消息队列系统相关函数，改用base.html中提供的全局函数
+// 处理查询响应
+function handleQueryResponse(message) {
+    console.log("收到查询响应:", message);
+    
+    // 通信级别的错误
+    if (message.success === false) {
+        const errorMsg = `查询sn: ${currentTerminalSN}的基站信息失败，失败原因：${message.error || "操作失败：通信错误"}`;
+        errorMessage(errorMsg);
+        return;
+    }
+    
+    // 检查是否有data字段
+    if (!message.data) {
+        console.error("响应格式不正确，缺少data字段:", message);
+        errorMessage("响应格式错误：缺少必要数据");
+        return;
+    }
+    
+    const data = message.data;
+    
+    // const successMessage = `成功查询了sn: ${data.sn}的基站信息`;
+    // infoMessage(successMessage);
+    
+    // 解析并显示基站信息
+    if (data.station_list) {
+        const stationList = data.station_list;
+        displayStationInfo(stationList);
+    }
+    
+}
 
 // 页面加载完成后初始化
+// 解析并显示基站信息
+function displayStationInfo(stationList) {
+    console.log('原始基站列表:', stationList);
+    try {
+        // 清空端站内当前基站列表
+        const tbody = document.getElementById('terminalBtsTableBody');
+        tbody.innerHTML = '';
+        
+        // 将基站列表添加到表格中
+        addBtsToTerminalList(stationList);
+        
+        // 显示成功消息
+        infoMessage(`成功加载${stationList.length}个基站信息`);
+    } catch (error) {
+        // 处理失败时显示错误消息
+        errorMessage('处理基站信息失败: ' + error.message);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', init);

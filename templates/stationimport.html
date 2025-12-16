@@ -1,14 +1,46 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}基站导入{% endblock %}
+{% block title %}端站内基站信息管理{% endblock %}
 
 {% block content %}
-<h1>基站导入</h1>
-<div class="container mt-4">
+<h1>端站内基站信息管理</h1>
+<div class="container-fluid mt-4">
+    <!-- 端站选择框 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <label class="form-label">端站选择</label>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start" type="button" id="terminalDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span id="selectedTerminalText">请先选择一个端站</span>
+                        </button>
+                        <div class="dropdown-menu w-100" aria-labelledby="terminalDropdownBtn">
+                            <div class="p-2">
+                                <input type="text" class="form-control" id="terminalSearch" placeholder="搜索端站...">
+                            </div>
+                            <div class="overflow-auto" style="max-height: 300px;">
+                                {% for terminal in terminals %}
+                                <a class="dropdown-item terminal-option" href="#" 
+                                    data-sn="{{ terminal.sn }}" 
+                                    data-ship-name="{{ terminal.ship.ship_name }}" 
+                                    data-ip="{{ terminal.ip_address|default:'-' }}" 
+                                    data-port="{{ terminal.port_number|default:'-' }}">
+                                    {{ terminal.ship.ship_name }} - {{ terminal.sn }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
         <!-- 基站选择区域 -->
-        <div class="col-md-6">
+        <div class="col-md-5">
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0">基站列表</h5>
@@ -31,77 +63,88 @@
                     </div>
                     
                     <!-- 基站列表 -->
-                    <div class="overflow-auto" style="max-height: 400px;">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="btsMasterCheckbox"></th>
-                                    <th>基站ID</th>
-                                    <th>基站名称</th>
-                                    <th>地区号</th>
-                                </tr>
-                            </thead>
-                            <tbody id="btsTableBody">
-                                {% regroup bts_list by region_code as bts_by_region %}
-                                {% for region_group in bts_by_region %}
-                                    {% for bts in region_group.list|dictsort:"bts_id" %}
+                    <div class="overflow-auto" style="min-height: 200px; height: calc(100vh - 600px); width: 100%;">
+                        <div class="table-responsive" style="width: 100% !important;">
+                            <table class="table table-striped table-hover" style="width: 100% !important;">
+                                <thead>
                                     <tr>
-                                        <td><input type="checkbox" class="bts-checkbox" data-bts-id="{{ bts.bts_id }}" data-region="{{ bts.region_code }}"></td>
-                                        <td>{{ bts.bts_id }}</td>
-                                        <td>{{ bts.bts_name }}</td>
-                                        <td>{{ bts.region_code|default:"-" }}</td>
+                                        <th><input type="checkbox" id="btsMasterCheckbox"></th>
+                                        <th>基站ID</th>
+                                        <th>基站名称</th>
+                                        <th>地区号</th>
+                                        <th>覆盖范围(km)</th>
+                                        <th>经度</th>
+                                        <th>纬度</th>
                                     </tr>
+                                </thead>
+                                <tbody id="btsTableBody">
+                                    {% regroup bts_list by region_code as bts_by_region %}
+                                    {% for region_group in bts_by_region %}
+                                        {% for bts in region_group.list|dictsort:"bts_id" %}
+                                        <tr>
+                                            <td><input type="checkbox" class="bts-checkbox" data-bts-id="{{ bts.bts_id }}" data-region="{{ bts.region_code }}"></td>
+                                            <td>{{ bts.bts_id }}</td>
+                                            <td>{{ bts.bts_name }}</td>
+                                            <td>{{ bts.region_code|default:"-" }}</td>
+                                            <td>{{ bts.coverage_distance|default:"-" }}</td>
+                                            <td>{{ bts.longitude|default:"-" }}</td>
+                                            <td>{{ bts.latitude|default:"-" }}</td>
+                                        </tr>
+                                        {% endfor %}
                                     {% endfor %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                        <p class="text-muted mt-2">一次仅能向一个端站进行基站信息导入</p>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-primary me-2" id="addToTerminalListBtn">将所选添加到列表</button>
+                        <button type="button" class="btn btn-warning" id="overwriteTerminalListBtn">使用所选覆盖列表</button>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- 端站选择和操作区域 -->
-        <div class="col-md-6">
+        <!-- 端站内当前基站列表 -->
+        <div class="col-md-7">
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">端站列表</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">端站内当前基站列表</h5>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-info me-2" id="queryBtsBtn">查询</button>
+                                <button type="button" class="btn btn-sm btn-light" id="addBaseStationRow">新增行</button>
+                            </div>
+                        </div>
                 </div>
                 <div class="card-body">
-                    <!-- 端站列表 -->
-                    <div class="overflow-auto" style="max-height: 400px;">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th>选择</th>
-                                    <th>端站信息</th>
-                                    <th>IP地址</th>
-                                    <th>端口</th>
-                                </tr>
-                            </thead>
-                            <tbody id="terminalTableBody">
-                                {% for terminal in terminals %}
-                                <tr>
-                                    <td><input type="radio" name="terminalRadio" class="terminal-radio" data-sn="{{ terminal.sn }}" data-ip_address="{{ terminal.ip_address|default:'' }}" data-port_number="{{ terminal.port_number|default:'' }}"></td>
-                                    <td>{{ terminal.ship.ship_name }}-{{ terminal.sn }}</td>
-                                    <td>{{ terminal.ip_address|default:'-' }}</td>
-                                    <td>{{ terminal.port_number|default:'-' }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 操作按钮和结果区域 -->
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-center">
-                        <button type="button" class="btn btn-success btn-lg" id="updateBtsInfoBtn">更新基站信息</button>
+                    <!-- 端站内当前基站列表 -->
+                    <div class="overflow-auto" style="min-height: 200px; height: calc(100vh - 600px); width: 100%;">
+                        <div class="table-responsive" style="width: 100% !important;">
+                            <table class="table table-striped table-hover" style="width: 100% !important;">
+                                <thead>
+                                    <tr>
+                                        <th>基站ID</th>
+                                        <th>基站名称</th>
+                                        <th>地区号</th>
+                                        <th>覆盖范围(km)</th>
+                                        <th>经度</th>
+                                        <th>纬度</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="terminalBtsTableBody">
+                                    <!-- 初始为空，由JavaScript动态生成 -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     
-                    <!-- 操作结果将通过全局提示框系统显示 -->
+                    <!-- 操作按钮 -->
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-success" id="updateBtsInfoBtn">更新基站信息</button>
+                    </div>
                 </div>
             </div>
         </div>

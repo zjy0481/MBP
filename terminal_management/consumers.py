@@ -188,16 +188,20 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['content'] = frontend_payload.get('content')
                 payload['file_name'] = frontend_payload.get('file_name')
                 
-            elif module == 'software_update':            # ADU/ACU 软件升级
+            elif module == 'software_update':                       # ADU/ACU 软件升级
                 payload['op'] = 'update'
                 payload['op_sub'] = 'software_update'
                 payload['update_type'] = frontend_payload.get('update_type')
                 payload['file_name'] = frontend_payload.get('file_name')
 
-            elif module == 'station_import':            # 基站导入
+            elif module == 'station_import':                        # 基站导入
                 payload['op'] = 'update'
                 payload['op_sub'] = 'base_station_import'
                 payload['station_list'] = frontend_payload.get('station_list')
+
+            elif module == 'query_station':                         # 查询基站信息
+                payload['op'] = 'query'
+                payload['op_sub'] = 'base_station'
 
             else:                                                   # default
                 gl_logger.error(f"收到了一个未知的控制模块: {module}")

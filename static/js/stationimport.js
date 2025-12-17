@@ -71,7 +71,7 @@ function bindEventListeners() {
         });
     });
     
-    // 新增：端站选择下拉菜单和搜索功能
+    // 端站选择下拉菜单和搜索功能
     const terminalSearch = document.getElementById('terminalSearch');
     const selectedTerminalText = document.getElementById('selectedTerminalText');
     
@@ -133,7 +133,7 @@ function handleWebSocketMessage(message) {
         
     }
     else if (message.type === 'control_response' && message.module === 'query_station') {
-        console.log('handleWebSocketMessage: 查询基站信息响应:', message.data);
+        // console.log('handleWebSocketMessage: 查询基站信息响应:', message.data);
         handleQueryResponse(message);
     }
 }

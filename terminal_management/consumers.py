@@ -107,9 +107,12 @@ class DataConsumer(AsyncWebsocketConsumer):
         # 检查 Redis 连接是否存在
         if not redis_publisher:
             gl_logger.error("无法处理控制指令：Redis 连接不可用。")
+            # 将前端的request_id传递回客户端
+            frontend_request_id = data.get('frontend_request_id')
             await self.send_to_client('control_response', {
                 'module': module, 'success': False,
-                'data': None, 'error': "服务器内部错误：无法连接到后端服务。"
+                'data': None, 'error': "服务器内部错误：无法连接到后端服务。",
+                'frontend_request_id': frontend_request_id
             })
             return
         
@@ -181,14 +184,43 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['op'] = 'query'
                 payload['op_sub'] = 'version'
 
-            elif module == 'upload_update_file':  # ADU/ACU 文件上传
-                payload['op'] = 'update'
-                payload['op_sub'] = 'upload_update_file'
-                payload['update_type'] = frontend_payload.get('update_type')
-                payload['content'] = frontend_payload.get('content')
-                payload['file_name'] = frontend_payload.get('file_name')
+            elif module == 'upload_file_init':  # 初始化文件上传
+                payload['op'] = 'upgrade'
+                payload['op_sub'] = 'upload_file_init'
+                payload['fileId'] = frontend_payload.get('fileId')
+                payload['fileName'] = frontend_payload.get('fileName')
+                payload['fileType'] = frontend_payload.get('fileType')
+                payload['totalSize'] = frontend_payload.get('totalSize')
+                payload['totalChunks'] = frontend_payload.get('totalChunks')
                 
-            elif module == 'software_update':                       # ADU/ACU 软件升级
+            elif module == 'upload_file_chunk':  # 处理文件分片
+                payload['op'] = 'upgrade'
+                payload['op_sub'] = 'upload_file_chunk'
+                payload['fileId'] = frontend_payload.get('fileId')
+                payload['chunkIndex'] = frontend_payload.get('chunkIndex')
+                payload['chunkData'] = frontend_payload.get('chunkData')
+                
+            elif module == 'upload_file_complete':  # 文件上传完成通知
+                payload['op'] = 'upgrade'
+                payload['op_sub'] = 'upload_file_complete'
+                payload['fileId'] = frontend_payload.get('fileId')
+                
+            elif module == 'upload_file_list':  # 查询端站升级文件列表
+                payload['op'] = 'upgrade'
+                payload['op_sub'] = 'upload_file_list'
+                
+            elif module == 'upload_file_delete':  # 删除端站升级文件
+                payload['op'] = 'upgrade'
+                payload['op_sub'] = 'upload_file_delete'
+                payload['fileId'] = frontend_payload.get('fileId')
+                
+            elif module == 'software_upgrade':  # 端站软件升级
+                payload['op'] = 'upgrade'
+                payload['op_sub'] = 'software_upgrade'
+                payload['fileId'] = frontend_payload.get('fileId')
+                payload['fileType'] = frontend_payload.get('fileType')
+                
+            elif module == 'software_update':  # 旧的软件升级命令（保持兼容性）
                 payload['op'] = 'update'
                 payload['op_sub'] = 'software_update'
                 payload['update_type'] = frontend_payload.get('update_type')
@@ -218,29 +250,57 @@ class DataConsumer(AsyncWebsocketConsumer):
             gl_logger.info(f"已向 Redis 'udp-command' 频道发布指令: {command_to_send}")
 
             # 等待 Future 被设置结果，设置10秒超时，对于更新功能设置60秒超时
-            timeout = 60.0 if module in ['update_adu', 'update_acu'] else 10.0
+            # 为不同类型的命令设置不同的超时时间
+            if module == 'software_upgrade':
+                # 升级命令没有响应，不需要等待
+                # 将前端的request_id传递回客户端
+                frontend_request_id = data.get('frontend_request_id')
+                await self.send_to_client('control_response', {
+                    'module': module, 'success': True,
+                    'data': {'result': '0'}, 'error': None,
+                    'frontend_request_id': frontend_request_id
+                })
+                return
+            elif module in ['upload_file_init', 'upload_file_chunk', 'upload_file_complete']:
+                # 文件上传相关命令，设置较长的超时时间
+                timeout = 30.0
+            elif module in ['upload_file_list', 'upload_file_delete']:
+                # 文件列表查询和删除命令
+                timeout = 15.0
+            else:
+                # 其他命令
+                timeout = 10.0
             
             response_dict = await asyncio.wait_for(future, timeout=timeout)
             
+            # 将前端的request_id传递回客户端
+            frontend_request_id = data.get('frontend_request_id')
             await self.send_to_client('control_response', {
                 'module': module, 'success': True,
-                'data': response_dict, 'error': None
+                'data': response_dict, 'error': None,
+                'frontend_request_id': frontend_request_id
             })
 
         except asyncio.TimeoutError:
-            gl_logger.warning(f"控制指令 '{module}' 超时。")
-            await self.send_to_client('control_response', {
-                'module': module, 'success': False,
-                'data': None, 'error': "操作失败：端站无响应（超时）。"
-            })
+              gl_logger.warning(f"控制指令 '{module}' 超时。")
+              # 将前端的request_id传递回客户端
+              frontend_request_id = data.get('frontend_request_id')
+              await self.send_to_client('control_response', {
+                  'module': module, 'success': False,
+                  'data': None, 'error': "操作失败：端站无响应（超时）。",
+                  'frontend_request_id': frontend_request_id
+              })
         except asyncio.CancelledError:
             gl_logger.info(f"控制指令 '{module}' 因连接关闭而被取消。")
             # 此处无需向客户端发送消息，因为它已经断开了
         except Exception as e:
             gl_logger.error(f"处理控制指令 '{module}' 时发生异常: {e}", exc_info=True)
+            # 将前端的request_id传递回客户端
+            frontend_request_id = data.get('frontend_request_id')
             await self.send_to_client('control_response', {
                 'module': module, 'success': False,
-                'data': None, 'error': "服务器内部错误。"
+                'data': None, 'error': "服务器内部错误。",
+                'frontend_request_id': frontend_request_id
             })
         finally:
             self.pending_replies.pop(request_id, None)

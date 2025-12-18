@@ -282,14 +282,14 @@ class DataConsumer(AsyncWebsocketConsumer):
             })
 
         except asyncio.TimeoutError:
-              gl_logger.warning(f"控制指令 '{module}' 超时。")
-              # 将前端的request_id传递回客户端
-              frontend_request_id = data.get('frontend_request_id')
-              await self.send_to_client('control_response', {
-                  'module': module, 'success': False,
-                  'data': None, 'error': "操作失败：端站无响应（超时）。",
-                  'frontend_request_id': frontend_request_id
-              })
+            gl_logger.warning(f"控制指令 '{module}' 超时。")
+            # 将前端的request_id传递回客户端
+            frontend_request_id = data.get('frontend_request_id')
+            await self.send_to_client('control_response', {
+                'module': module, 'success': False,
+                'data': None, 'error': "操作失败：端站无响应（超时）。",
+                'frontend_request_id': frontend_request_id
+            })
         except asyncio.CancelledError:
             gl_logger.info(f"控制指令 '{module}' 因连接关闭而被取消。")
             # 此处无需向客户端发送消息，因为它已经断开了

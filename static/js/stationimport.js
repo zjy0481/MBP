@@ -455,12 +455,23 @@ function sendSettingMessageToTerminal(terminal, stationList) {
     const terminalIP = terminal.ip_address;
     const terminalPort = terminal.port_number;
     
+    // 转换station_list格式为新的消息格式
+    const convertedStationList = stationList.map(station => ({
+        id: station.bts_id || '',
+        bts_no: station.bts_id || '',
+        bts_name: station.bts_name || '',
+        cover: station.coverage_distance || '',
+        group_no: station.region_code || '',
+        longitude: station.longitude || '',
+        latitude: station.latitude || ''
+    }));
+    
     // 按照协议文档构造消息
     const payload = {
         sn: terminalSN, // 消息的sn字段与端站匹配
         op: "update",
         op_sub: "base_station_import",
-        station_list: stationList // 直接使用原始对象，避免双重JSON序列化
+        station_list: convertedStationList // 直接使用转换后的对象，避免双重JSON序列化
     };
     
     console.log(`发送基站导入消息给端站 ${terminalSN}:`, payload);
@@ -596,8 +607,19 @@ function displayStationInfo(stationList) {
         const tbody = document.getElementById('terminalBtsTableBody');
         tbody.innerHTML = '';
         
+        // 转换基站列表字段名
+        // 这里忽略了bts_no字段，因为他实际上和id是等效的
+        const convertedStationList = stationList.map(station => ({
+            bts_id: station.id || '',
+            bts_name: station.bts_name || '',
+            region_code: station.group_no || '',
+            coverage_distance: station.cover || '',
+            longitude: station.longitude || '',
+            latitude: station.latitude || ''
+        }));
+        
         // 将基站列表添加到表格中
-        addBtsToTerminalList(stationList);
+        addBtsToTerminalList(convertedStationList);
         
         // 显示成功消息
         infoMessage(`成功加载${stationList.length}个基站信息`);

@@ -488,7 +488,7 @@
 | "sn"           | "SN000001"                                                   | 设备序列号                                                   |
 | "op"           | "query_ans"                                                  | 操作类型：查询（响应）                                       |
 | "op_sub"       | "base_station"                                               | 操作子类：查询基站信息                                       |
-| "station_list" | [{"bts_id": "1001", "bts_name": "基站一", "coverage_distance": 4.2,  "region_code": "1", "longitude": 113.327160, "latitude": 23.120049},  {"bts_id": "1004", "bts_name": "基站四", "coverage_distance": 3.5, "region_code": "1", "longitude": 113.941019, "latitude": 22.539170}] | 基站信息列表（本例子仅包含了两个基站，基站列表可根据实际情况包含若干个基站信息） |
+| "station_list" | [{"id": 1001, "longitude": 122.05728, "latitude": 30.63446, "bts_name": "YSTHMCSZ-1024", "cover": 70.0, "bts_no": 1001, "group_no": 1}, {"id": 1002, "longitude": 121.92609, "latitude": 30.96303, "bts_name": "NTJLGY-1033", "cover": 40.0, "bts_no": 1002, "group_no": 1}] | 基站信息列表（本例子仅包含了两个基站，基站列表可根据实际情况包含若干个基站信息） |
 
 #### 2、向端站发送更新基站信息指令
 
@@ -499,7 +499,7 @@
 | "sn"           | "SN000001"                                                   | 设备序列号                                                   |
 | "op"           | "update"                                                     | 操作类型：端站更新                                           |
 | "op_sub"       | "base_station_import"                                        | 操作子类：基站信息导入                                       |
-| "station_list" | [{"bts_id": "1001", "bts_name": "基站一", "coverage_distance": 4.2,  "region_code": "1", "longitude": 113.327160, "latitude": 23.120049},  {"bts_id": "1004", "bts_name": "基站四", "coverage_distance": 3.5, "region_code": "1", "longitude": 113.941019, "latitude": 22.539170}] | 基站信息列表（本例子仅包含了两个基站，基站列表可根据实际情况包含若干个基站信息） |
+| "station_list" | [{"id": 1001, "longitude": 122.05728, "latitude": 30.63446, "bts_name": "YSTHMCSZ-1024", "cover": 70.0, "bts_no": 1001, "group_no": 1}, {"id": 1002, "longitude": 121.92609, "latitude": 30.96303, "bts_name": "NTJLGY-1033", "cover": 40.0, "bts_no": 1002, "group_no": 1}] | 基站信息列表（本例子仅包含了两个基站，基站列表可根据实际情况包含若干个基站信息） |
 
 端站响应：
 

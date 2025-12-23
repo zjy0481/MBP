@@ -55,12 +55,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const lastReportDate = this.dataset.lastReportDate;
             const lastReportTime = this.dataset.lastReportTime;
             const lastReportEl = document.getElementById('selected_last_report');
-            if (lastReportDate && lastReportTime) {
-                lastReportEl.innerText = `${lastReportDate} ${lastReportTime}`;
-            } else {
-                lastReportEl.innerText = '暂无上报数据';
+            if (lastReportEl) {
+                if (lastReportDate && lastReportTime) {
+                    lastReportEl.innerText = `${lastReportDate} ${lastReportTime}`;
+                } else {
+                    lastReportEl.innerText = '暂无上报数据';
+                }
             }
-            
             const event = new CustomEvent('terminalSelected', { detail: terminalData });
             document.dispatchEvent(event);
         });

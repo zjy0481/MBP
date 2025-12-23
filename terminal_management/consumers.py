@@ -3,6 +3,8 @@
 import json
 import uuid
 import redis
+import os
+import base64
 from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -184,7 +186,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['op'] = 'query'
                 payload['op_sub'] = 'version'
 
-            elif module == 'upload_file_init':  # 初始化文件上传
+            elif module == 'upload_file_init':                      # 初始化文件上传
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'upload_file_init'
                 payload['fileId'] = frontend_payload.get('fileId')
@@ -193,38 +195,62 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['totalSize'] = frontend_payload.get('totalSize')
                 payload['totalChunks'] = frontend_payload.get('totalChunks')
                 
-            elif module == 'upload_file_chunk':  # 处理文件分片
+            elif module == 'upload_file_chunk':                     # 处理文件分片
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'upload_file_chunk'
                 payload['fileId'] = frontend_payload.get('fileId')
                 payload['chunkIndex'] = frontend_payload.get('chunkIndex')
-                payload['chunkData'] = frontend_payload.get('chunkData')
                 
-            elif module == 'upload_file_complete':  # 文件上传完成通知
+                # 从服务器文件系统读取文件分片
+                file_name = frontend_payload.get('fileName')
+                chunk_index = frontend_payload.get('chunkIndex')
+                chunk_size = frontend_payload.get('chunkSize')
+                
+                try:
+                    # 构建文件路径
+                    upgrade_files_dir = os.path.join(settings.BASE_DIR, 'upgrade_files')
+                    file_path = os.path.join(upgrade_files_dir, file_name)
+                    
+                    # 计算分片的起始和结束位置
+                    start = chunk_index * chunk_size
+                    end = start + chunk_size
+                    
+                    # 读取文件分片并进行Base64编码
+                    with open(file_path, 'rb') as f:
+                        f.seek(start)
+                        chunk_data = f.read(chunk_size)
+                        payload['chunkData'] = base64.b64encode(chunk_data).decode('utf-8')
+                    
+                    gl_logger.info(f"成功读取文件分片: {file_name}, 分片: {chunk_index}, 大小: {len(chunk_data)}B")
+                except Exception as e:
+                    gl_logger.error(f"读取文件分片失败: {file_name}, 分片: {chunk_index}, 错误: {e}")
+                    raise ValueError(f"读取文件分片失败: {e}")
+
+            elif module == 'upload_file_complete':                  # 文件上传完成通知
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'upload_file_complete'
                 payload['fileId'] = frontend_payload.get('fileId')
                 
-            elif module == 'upload_file_list':  # 查询端站升级文件列表
+            elif module == 'upload_file_list':                      # 查询端站升级文件列表
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'upload_file_list'
                 
-            elif module == 'upload_file_delete':  # 删除端站升级文件
+            elif module == 'upload_file_delete':                    # 删除端站升级文件
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'upload_file_delete'
                 payload['fileId'] = frontend_payload.get('fileId')
                 
-            elif module == 'software_upgrade':  # 端站软件升级
+            elif module == 'software_upgrade':                      # 端站软件升级
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'software_upgrade'
                 payload['fileId'] = frontend_payload.get('fileId')
                 payload['fileType'] = frontend_payload.get('fileType')
                 
-            elif module == 'software_update':  # 旧的软件升级命令（保持兼容性）
-                payload['op'] = 'update'
-                payload['op_sub'] = 'software_update'
-                payload['update_type'] = frontend_payload.get('update_type')
-                payload['file_name'] = frontend_payload.get('file_name')
+            # elif module == 'software_update':                     # 旧的软件升级命令
+            #     payload['op'] = 'update'
+            #     payload['op_sub'] = 'software_update'
+            #     payload['update_type'] = frontend_payload.get('update_type')
+            #     payload['file_name'] = frontend_payload.get('file_name')
 
             elif module == 'station_import':                        # 基站导入
                 payload['op'] = 'update'

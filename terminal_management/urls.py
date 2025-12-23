@@ -42,4 +42,7 @@ urlpatterns = [
     # --- GIS ---
     path('gis/', views.gis_page, name='gis_page'),
     path('api/get_track/', views.get_ship_track, name='get_ship_track'),
+    
+    # --- 服务器升级文件列表 ---
+    path('api/get_server_upgrade_files/', views.get_server_upgrade_files, name='get_server_upgrade_files'),
 ]

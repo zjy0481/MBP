@@ -457,13 +457,13 @@ function sendSettingMessageToTerminal(terminal, stationList) {
     
     // 转换station_list格式为新的消息格式
     const convertedStationList = stationList.map(station => ({
-        id: station.bts_id || '',
-        bts_no: station.bts_id || '',
+        id: station.bts_id ? parseInt(station.bts_id) : '',
+        bts_no: station.bts_id ? parseInt(station.bts_id) : '',
         bts_name: station.bts_name || '',
-        cover: station.coverage_distance || '',
-        group_no: station.region_code || '',
-        longitude: station.longitude || '',
-        latitude: station.latitude || ''
+        cover: station.coverage_distance ? parseFloat(station.coverage_distance) : '',
+        group_no: station.region_code ? parseInt(station.region_code) : '',
+        longitude: station.longitude ? parseFloat(station.longitude) : '',
+        latitude: station.latitude ? parseFloat(station.latitude) : ''
     }));
     
     // 按照协议文档构造消息

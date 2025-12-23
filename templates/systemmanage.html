@@ -172,30 +172,30 @@
 
 <fieldset class="mb-3">
     <legend>升级版本</legend>
+    <!-- 服务器升级文件列表 -->
     <div class="mb-3">
-        <label for="adu_file" class="form-label">ADU软件</label>
-        <div class="input-group">
-            <input type="file" class="form-control" id="adu_file">
-            <button class="btn btn-secondary" id="adu_upload">上传</button>
-            <div class="progress" id="adu_progress" style="display: none; width: 200px; margin-left: 10px;">
-                <div class="progress-bar" id="adu_progress_bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
+        <h5>服务器升级文件列表</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th>类型</th>
+                        <th>大小</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="server_upgrade_files_table_body">
+                    <!-- 表格内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
         </div>
-    </div>
-    <div class="mb-3">
-        <label for="acu_file" class="form-label">ACU软件</label>
-        <div class="input-group">
-            <input type="file" class="form-control" id="acu_file">
-            <button class="btn btn-secondary" id="acu_upload">上传</button>
-            <div class="progress" id="acu_progress" style="display: none; width: 200px; margin-left: 10px;">
-                <div class="progress-bar" id="acu_progress_bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-            </div>
-        </div>
+        <button class="btn btn-info" id="refresh_server_files">刷新服务器文件列表</button>
     </div>
     
     <!-- 升级文件列表表格 -->
     <div class="mb-3">
-        <h5>升级文件列表</h5>
+        <h5>端站升级文件列表</h5>
         <div class="table-responsive">
             <table class="table table-bordered">
                 <thead>

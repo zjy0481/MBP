@@ -10,6 +10,10 @@ from .forms import TerminalInfoForm
 from .forms import BaseStationInfoForm
 from django.http import JsonResponse
 from datetime import datetime
+import os
+import glob
+from pathlib import Path
+from mbp_project.settings import BASE_DIR
 
 def home(request):
     """
@@ -463,3 +467,36 @@ def get_ship_track(request):
         report['ship_owner'] = ship.ship_owner
 
     return JsonResponse(track_data, safe=False)
+
+# 添加获取服务器升级文件列表的API端点
+@login_required
+def get_server_upgrade_files(request):
+    """
+    获取服务器上升级文件列表的API
+    """
+    # 构建升级文件目录路径
+    upgrade_files_dir = os.path.join(BASE_DIR, 'upgrade_files')
+    
+    # 确保目录存在
+    if not os.path.exists(upgrade_files_dir):
+        return JsonResponse({'files': [], 'message': '升级文件目录不存在'}, safe=False)
+    
+    # 获取目录下所有文件
+    files = []
+    for file_path in glob.glob(os.path.join(upgrade_files_dir, '*')):
+        if os.path.isfile(file_path):
+            file_name = os.path.basename(file_path)
+            file_size = os.path.getsize(file_path)
+            
+            # 获取文件的修改时间
+            modify_time = os.path.getmtime(file_path)
+            upload_time = datetime.fromtimestamp(modify_time).strftime('%Y-%m-%d %H:%M:%S')
+            
+            files.append({
+                'id': file_name,  # 使用文件名作为唯一标识
+                'name': file_name,
+                'size': file_size,
+                'upload_time': upload_time
+            })
+    
+    return JsonResponse({'files': files}, safe=False)

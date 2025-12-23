@@ -11,6 +11,9 @@ function onSocketReady() {
         
         // 切换端站时，重置所有状态
         resetAllStatus();
+        
+        // 获取服务器升级文件列表
+        getServerUpgradeFiles();
     });
 
     // --- WebSocket 消息处理器 ---
@@ -262,36 +265,12 @@ function onSocketReady() {
             document.getElementById('version_stru').value = data.stru_version || '';
         }
     }
-
-    function setupUpgradeHandlers(type) { // type can be 'adu' or 'acu'
-        const uploadBtn = document.getElementById(`${type}_upload`);
-        const fileInput = document.getElementById(`${type}_file`);
-        const progressBar = document.getElementById(`${type}_progress`);
-        const progressBarInner = document.getElementById(`${type}_progress_bar`);
-        
-        // 上传按钮事件
-        uploadBtn.addEventListener('click', () => {
-            const file = fileInput.files[0];
-            if (!file) {
-                warningMessage('请先选择一个文件！');
-                return;
-            }
-            
-            // 显示进度条
-            progressBar.style.display = 'block';
-            progressBarInner.style.width = '0%';
-            progressBarInner.textContent = '0%';
-            
-            // 开始上传流程
-            startFileUpload(file, type, progressBarInner);
-        });
-    }
     
     // 开始文件上传流程
     function startFileUpload(file, fileType, progressBar) {
         // 生成唯一的fileId
         const fileId = generateFileId(file);
-        const chunkSize = 4 * 1024; // 4KB
+        const chunkSize = 1 * 1024; // 1KB
         const totalChunks = Math.ceil(file.size / chunkSize);
         let currentChunk = 0;
         let retryCount = 0;
@@ -431,6 +410,202 @@ function onSocketReady() {
         });
     }
 
+    // 生成服务器升级文件列表表格行
+    function generateServerUpgradeFileTableRow(fileData) {
+        const tableBody = document.getElementById('server_upgrade_files_table_body');
+        if (!tableBody) return;
+
+        // 根据文件名判断类型
+        const fileName = fileData.name || '';
+        let fileType = '未知';
+        if (fileName.toLowerCase().startsWith('adu')) {
+            fileType = 'adu';
+        } else if (fileName.toLowerCase().startsWith('acu')) {
+            fileType = 'acu';
+        }
+
+        // 格式化文件大小
+        const fileSize = fileData.size || 0;
+        const formattedSize = formatFileSize(fileSize);
+
+        // 创建表格行
+        const row = document.createElement('tr');
+        row.dataset.fileId = fileData.id || '';
+        
+        // 文件名列
+        const nameCell = document.createElement('td');
+        nameCell.textContent = fileName;
+        row.appendChild(nameCell);
+        
+        // 类型列
+        const typeCell = document.createElement('td');
+        typeCell.textContent = fileType;
+        row.appendChild(typeCell);
+        
+        // 大小列
+        const sizeCell = document.createElement('td');
+        sizeCell.textContent = formattedSize;
+        row.appendChild(sizeCell);
+        
+        // 操作列
+        const actionCell = document.createElement('td');
+        
+        // 上传按钮
+        const uploadBtn = document.createElement('button');
+        uploadBtn.className = 'btn btn-secondary btn-sm';
+        uploadBtn.textContent = '上传';
+        actionCell.appendChild(uploadBtn);
+        
+        // 进度条（隐藏）
+        const progressDiv = document.createElement('div');
+        progressDiv.className = 'progress';
+        progressDiv.style.display = 'none';
+        progressDiv.style.width = '200px';
+        progressDiv.style.marginLeft = '10px';
+        
+        const progressBar = document.createElement('div');
+        progressBar.className = 'progress-bar';
+        progressBar.role = 'progressbar';
+        progressBar.style.width = '0%';
+        progressBar.setAttribute('aria-valuenow', '0');
+        progressBar.setAttribute('aria-valuemin', '0');
+        progressBar.setAttribute('aria-valuemax', '100');
+        progressBar.textContent = '0%';
+        
+        progressDiv.appendChild(progressBar);
+        actionCell.appendChild(progressDiv);
+        
+        row.appendChild(actionCell);
+        tableBody.appendChild(row);
+
+        // 为上传按钮添加点击事件
+        uploadBtn.addEventListener('click', () => {
+            console.log('上传文件按钮被点击，文件：', fileName);
+            // 显示进度条
+            progressDiv.style.display = 'inline-block';
+            // 禁用上传按钮防止重复点击
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '上传中...';
+            
+            // 调用上传文件函数
+            uploadServerFile(fileName, fileType, fileSize, progressBar, () => {
+                // 上传完成后恢复按钮状态
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '上传';
+            });
+        });
+    }
+
+    // 上传服务器文件到端站
+    function uploadServerFile(fileName, fileType, totalSize, progressBar, callback) {
+        // 生成唯一的fileId
+        const fileId = generateFileId({name: fileName});
+        
+        // 上传参数配置
+        const chunkSize = 1024 * 1024; // 1MB per chunk
+        const totalChunks = Math.ceil(totalSize / chunkSize);
+        
+        // 初始化文件上传
+        initFileUpload(fileId, fileName, fileType, totalSize, totalChunks, function(success) {
+            if (success) {
+                // 初始化成功，开始发送文件分片
+                sendNextChunk(fileId, fileName, fileType, chunkSize, 0, totalChunks, 0, 3, progressBar, callback);
+            } else {
+                // 初始化失败
+                errorMessage('文件上传初始化失败！');
+                progressBar.parentElement.style.display = 'none';
+                callback();
+            }
+        });
+    }
+
+    // 初始化文件上传
+    function initFileUpload(fileId, fileName, fileType, totalSize, totalChunks, callback) {
+        sendControlCommand('upload_file_init', {
+            fileId: fileId,
+            fileName: fileName,
+            fileType: fileType,
+            totalSize: totalSize,
+            totalChunks: totalChunks
+        }, function(response) {
+            if (response && response.success) {
+                // 初始化成功
+                callback(true);
+            } else {
+                // 初始化失败
+                callback(false);
+            }
+        });
+    }
+    
+    // 发送文件分片
+    function sendNextChunk(fileId, fileName, fileType, chunkSize, currentChunk, totalChunks, retryCount, maxRetries, progressBar, callback) {
+        if (currentChunk >= totalChunks) {
+            // 所有分片都已发送完成
+            completeFileUpload(fileId, function(success) {
+                if (success) {
+                    infoMessage('文件上传完成！');
+                } else {
+                    errorMessage('文件上传完成通知失败！');
+                }
+                // 隐藏进度条
+                progressBar.parentElement.style.display = 'none';
+                callback();
+            });
+            return;
+        }
+        
+        // 发送分片请求到后端
+        sendControlCommand('upload_file_chunk', {
+            fileId: fileId,
+            fileName: fileName,
+            chunkIndex: currentChunk,
+            chunkSize: chunkSize
+        }, function(response) {
+            if (response && response.success) {
+                // 分片发送成功
+                retryCount = 0;
+                currentChunk++;
+                
+                // 更新进度条
+                const progress = Math.floor((currentChunk / totalChunks) * 100);
+                progressBar.style.width = `${progress}%`;
+                progressBar.setAttribute('aria-valuenow', progress);
+                progressBar.textContent = `${progress}%`;
+                
+                // 发送下一个分片
+                sendNextChunk(fileId, fileName, fileType, chunkSize, currentChunk, totalChunks, retryCount, maxRetries, progressBar, callback);
+            } else {
+                // 分片发送失败，重试
+                retryCount++;
+                warningMessage(`分片发送失败，正在重试... (第 ${retryCount} 次失败)`);
+                
+                if (retryCount >= maxRetries) {
+                    // 重试次数超过上限
+                    errorMessage('文件上传失败：分片发送多次失败！');
+                    progressBar.parentElement.style.display = 'none';
+                    callback();
+                } else {
+                    // 重新发送当前分片
+                    sendNextChunk(fileId, fileName, fileType, chunkSize, currentChunk, totalChunks, retryCount, maxRetries, progressBar, callback);
+                }
+            }
+        });
+    }
+    
+    // 完成文件上传
+    function completeFileUpload(fileId, callback) {
+        sendControlCommand('upload_file_complete', {
+            fileId: fileId
+        }, function(response) {
+            if (response && response.success) {
+                callback(true);
+            } else {
+                callback(false);
+            }
+        });
+    }
+
     // 生成升级文件列表表格行
     function generateUpgradeFileTableRow(fileData) {
         const tableBody = document.getElementById('upgrade_files_table_body');
@@ -510,6 +685,48 @@ function onSocketReady() {
         if (tableBody) {
             tableBody.innerHTML = '';
         }
+    }
+
+    // 清空服务器升级文件列表
+    function clearServerUpgradeFilesTable() {
+        const tableBody = document.getElementById('server_upgrade_files_table_body');
+        if (tableBody) {
+            tableBody.innerHTML = '';
+        }
+    }
+
+    // 获取服务器升级文件列表
+    function getServerUpgradeFiles() {
+        // 清空服务器升级文件列表
+        clearServerUpgradeFilesTable();
+        
+        // 发送AJAX请求获取服务器文件列表
+        fetch('/api/get_server_upgrade_files/')
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.files && data.files.length > 0) {
+                    data.files.forEach(file => {
+                        // 生成服务器升级文件列表表格行
+                        generateServerUpgradeFileTableRow(file);
+                    });
+                } else {
+                    // 如果没有文件，添加一个空行提示
+                    const tableBody = document.getElementById('server_upgrade_files_table_body');
+                    if (tableBody) {
+                        const emptyRow = document.createElement('tr');
+                        const emptyCell = document.createElement('td');
+                        emptyCell.colSpan = 4; // 服务器升级文件列表表格有4列
+                        emptyCell.textContent = '暂无升级文件';
+                        emptyCell.className = 'text-center';
+                        emptyRow.appendChild(emptyCell);
+                        tableBody.appendChild(emptyRow);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('获取服务器升级文件列表失败:', error);
+                errorMessage('获取服务器升级文件列表失败，请稍后重试！');
+            });
     }
 
     // 显示/隐藏进度条
@@ -605,11 +822,16 @@ function onSocketReady() {
     
     // 版本查询
     document.getElementById('query_version').addEventListener('click', () => sendControlCommand('query_version'));
-
-    // 升级版本 为 ADU 和 ACU 分别设置事件处理器
-    setupUpgradeHandlers('adu');
-    setupUpgradeHandlers('acu');
     
+    // 刷新服务器文件列表按钮事件
+    const refreshServerFilesBtn = document.getElementById('refresh_server_files');
+    if (refreshServerFilesBtn) {
+        refreshServerFilesBtn.addEventListener('click', () => {
+            console.log('刷新服务器文件列表按钮被点击');
+            getServerUpgradeFiles();
+        });
+    }
+
     // 初始化页面
     resetAllStatus();
 }

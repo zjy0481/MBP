@@ -158,20 +158,15 @@
                     <h6 class="settings-title">显示设置</h6>
                     <div class="form-group">
                         <label for="time-range-select">行驶轨迹时间跨度</label>
-                        <div class="input-group">
-                            <select class="custom-select" id="time-range-select">
-                                <option value="6h" selected>过去6小时</option>
-                                <option value="12h">过去12小时</option>
-                                <option value="1d">过去1天</option>
-                                <option value="3d">过去3天</option>
-                                <option value="1w">过去1周</option>
-                                <option value="custom">自定义</option>
-                                <option value="none">不显示行驶轨迹</option>
-                            </select>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" id="time-confirm-btn">确认</button>
-                            </div>
-                        </div>
+                        <select class="custom-select" id="time-range-select">
+                            <option value="6h" selected>过去6小时</option>
+                            <option value="12h">过去12小时</option>
+                            <option value="1d">过去1天</option>
+                            <option value="3d">过去3天</option>
+                            <option value="1w">过去1周</option>
+                            <option value="custom">自定义</option>
+                            <option value="none">不显示行驶轨迹</option>
+                        </select>
                     </div>
                     <div id="custom-time-range" class="mt-2" style="display: none;">
                         <div class="form-group">
@@ -191,12 +186,13 @@
                             <input type="range" class="custom-range" id="distance-slider" min="100" max="50000" value="1852">
                             <small>50k</small>
                         </div>
-                        <div class="input-group mt-2">
+                        <div class="mt-2">
                             <input type="number" class="form-control" id="distance-input" min="100" max="50000" value="1852">
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" id="distance-confirm-btn">确认</button>
-                            </div>
                         </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-secondary w-100" type="button" id="display-settings-confirm-btn">确认设置</button>
                     </div>
                 </div>
             </div>

@@ -32,8 +32,8 @@ function onSocketReady() {
     const distanceSlider = document.getElementById('distance-slider');
     const distanceInput = document.getElementById('distance-input');
 
-    const timeConfirmBtn = document.getElementById('time-confirm-btn');
-    const distanceConfirmBtn = document.getElementById('distance-confirm-btn');
+    // const timeConfirmBtn = document.getElementById('time-confirm-btn');
+    // const distanceConfirmBtn = document.getElementById('distance-confirm-btn');
 
     // -------------------------------------------------------------------
     // WGS84 to BD-09 坐标转换函数
@@ -330,7 +330,7 @@ function onSocketReady() {
             const reports = await response.json();
 
             if (reports.length === 0) {
-                warnMessage("在选定时间段内没有符合要求的上报数据");
+                warningMessage("在选定时间段内没有符合要求的上报数据");
                 return;
             }
 
@@ -414,11 +414,29 @@ function onSocketReady() {
             shouldDraw = false;
         } else if (timeOption === 'custom') {
             if (!startTimeInput.value || !endTimeInput.value) {
-                warnMessage("自定义时间模式下，开始和结束时间不能为空。");
+                warningMessage("自定义时间模式下，开始和结束时间不能为空。");
                 shouldDraw = false;
             }
             startTime = new Date(startTimeInput.value);
             endTime = new Date(endTimeInput.value);
+            
+            // 添加逻辑：如果开始时间晚于结束时间，自动对调
+            if (startTime > endTime) {
+                [startTime, endTime] = [endTime, startTime];
+                // 更新输入框的值，让用户看到调整后的结果（保持本地时区）
+                startTimeInput.value = startTime.getFullYear() + '-' + 
+                                      String(startTime.getMonth() + 1).padStart(2, '0') + '-' + 
+                                      String(startTime.getDate()).padStart(2, '0') + 'T' + 
+                                      String(startTime.getHours()).padStart(2, '0') + ':' + 
+                                      String(startTime.getMinutes()).padStart(2, '0');
+                endTimeInput.value = endTime.getFullYear() + '-' + 
+                                    String(endTime.getMonth() + 1).padStart(2, '0') + '-' + 
+                                    String(endTime.getDate()).padStart(2, '0') + 'T' + 
+                                    String(endTime.getHours()).padStart(2, '0') + ':' + 
+                                    String(endTime.getMinutes()).padStart(2, '0');
+                // 提示用户时间已经被调整
+                warningMessage("开始时间晚于结束时间，已自动调整时间范围。");
+            }
         } else {
             endTime = new Date();
             const durationMap = { '6h': 6, '12h': 12, '1d': 24, '3d': 72, '1w': 168 };
@@ -456,8 +474,8 @@ function onSocketReady() {
         fetchAndDrawPath(sn);
     }
     
-    timeConfirmBtn.addEventListener('click', () => handleConfirmClick());
-    distanceConfirmBtn.addEventListener('click', () => handleConfirmClick());
+    const displaySettingsConfirmBtn = document.getElementById('display-settings-confirm-btn');
+    displaySettingsConfirmBtn.addEventListener('click', () => handleConfirmClick());
 
     // -------------------------------------------------------------------
     // 页面初始化

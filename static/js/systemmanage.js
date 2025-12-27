@@ -502,7 +502,7 @@ function onSocketReady() {
         const fileId = generateFileId({name: fileName});
         
         // 上传参数配置
-        const chunkSize = 1024 * 1024; // 1MB per chunk
+        const chunkSize = 1024; // 1KB per chunk
         const totalChunks = Math.ceil(totalSize / chunkSize);
         
         // 初始化文件上传

@@ -61,6 +61,7 @@ function onSocketReady() {
                 case 'upload_file_list':
                     // 更新文件列表
                     clearUpgradeFilesTable();
+                    // console.log("正在更新端站升级文件列表");
                     
                     if (responseData && responseData.files && responseData.files.length > 0) {
                         responseData.files.forEach(file => {
@@ -71,7 +72,8 @@ function onSocketReady() {
                                 type: file.fileType === 'adu' ? 'ADU' : 'ACU',
                                 size: formatFileSize(file.fileSize || file.size), // 兼容fileSize和size字段
                                 uploadTime: formatDateTime(file.uploadTime),
-                                status: typeof file.status === 'number' ? (file.status === 0 ? '可用' : '不可用') : file.status // 兼容数字和字符串类型的status
+                                status: typeof file.status === 'number' ? (file.status === 0 ? '可用' : '不可用') : file.status, // 兼容数字和字符串类型的status
+                                pathName: file.status === 'complete' ? file.pathName : ''
                             };
                             generateUpgradeFileTableRow(fileData);
                         });
@@ -452,7 +454,7 @@ function onSocketReady() {
         
         // 上传按钮
         const uploadBtn = document.createElement('button');
-        uploadBtn.className = 'btn btn-secondary btn-sm';
+        uploadBtn.className = 'btn btn-primary btn-sm';
         uploadBtn.textContent = '上传';
         actionCell.appendChild(uploadBtn);
         
@@ -610,6 +612,7 @@ function onSocketReady() {
     function generateUpgradeFileTableRow(fileData) {
         const tableBody = document.getElementById('upgrade_files_table_body');
         if (!tableBody) return;
+        // console.log(fileData.pathName);
 
         const row = document.createElement('tr');
         row.dataset.fileId = fileData.id;
@@ -649,7 +652,8 @@ function onSocketReady() {
         deleteBtn.addEventListener('click', () => {
             // 发送删除文件请求
             sendControlCommand('upload_file_delete', {
-                fileId: fileData.id
+                fileId: fileData.id,
+                pathName: fileData.pathName
             }, function(response) {
                 if (response && response.success) {
                     // 删除成功，移除表格行

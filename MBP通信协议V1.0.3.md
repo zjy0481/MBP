@@ -409,7 +409,7 @@
 | "sn"     | "SN000001"                                                   | 设备序列号                                                   |
 | "op"     | "upgrade"                                                    | 操作类型：端站更新                                           |
 | "op_sub" | "upload_file_list_ans"                                       | 操作子类：查询端站升级文件列表（响应）                       |
-| "files"  | [{"id": "file_111","name": "ACU_01.7z","type": "acu","size": 204800,"uploadTime": 1734300000,"status": "complete"},{"id": "file_222","name": "ADU_01.7z","type": "adu","size": 1536000,"uploadTime": 1734343200,"status": "complete"},{"id": "file_333","name": "ADU_02.7z","type": "adu","size": 5242880,"uploadTime": 1734386400,"status": "上传中 30%"}] | 每个子串代表一个文件，字段分别对应文件ID、文件名、类型、大小、时间戳、状态 |
+| "files"  | [{"id": "file_111","name": "ACU_01.7z","type": "acu","size": 204800,"uploadTime": 1734300000,"status": "complete","pathName":"C:\MBP\upgrade_files\ACU_01.7z"},{"id": "file_222","name": "ADU_01.7z","type": "adu","size": 1536000,"uploadTime": 1734343200,"status": "complete","pathName":"C:\MBP\upgrade_files\ADU_01.7z"},{"id": "file_333","name": "ADU_02.7z","type": "adu","size": 5242880,"uploadTime": 1734386400,"status": "上传中 30%"}] | 每个子串代表一个文件，字段分别对应文件ID、文件名、类型、大小、时间戳、状态、文件的路径 |
 
 
 
@@ -419,12 +419,13 @@
 
 服务端下发请求：
 
-| 字段     | 内容示例             | 备注                   |
-| -------- | -------------------- | ---------------------- |
-| "sn"     | "SN000001"           | 设备序列号             |
-| "op"     | "upgrade"            | 操作类型：端站更新     |
-| "op_sub" | "upload_file_delete" | 操作子类：删除指定文件 |
-| "fileId" | 略                   | 文件ID（需确保唯一性） |
+| 字段       | 内容示例             | 备注                   |
+| ---------- | -------------------- | ---------------------- |
+| "sn"       | "SN000001"           | 设备序列号             |
+| "op"       | "upgrade"            | 操作类型：端站更新     |
+| "op_sub"   | "upload_file_delete" | 操作子类：删除指定文件 |
+| "fileId"   | 略                   | 文件ID（需确保唯一性） |
+| "pathName" | 略                   | 文件绝对路径           |
 
 端站响应：
 

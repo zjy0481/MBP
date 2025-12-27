@@ -8,21 +8,131 @@
     <style>
         body { display: flex; min-height: 100vh; flex-direction: column; }
         .main-container { display: flex; flex: 1; }
-        .sidebar { width: 220px; background-color: #f8f9fa; }
-        .content { flex: 1; padding: 20px; }
+        .sidebar { 
+            width: 240px; 
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            border-right: 1px solid #1a252f;
+        }
+        .sidebar .nav-link {
+            color: #ecf0f1;
+            padding: 12px 20px;
+            margin: 4px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
+        }
+        .sidebar .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .sidebar .nav-link.active {
+            background-color: #3498db;
+            color: white;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3);
+        }
+        .sidebar .nav-link .nav-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+        .sidebar-heading {
+            color: #95a5a6;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 20px 20px 10px;
+            margin-bottom: 0;
+        }
+        .content { 
+            flex: 1; 
+            padding: 30px; 
+            background-color: #f5f6fa;
+        }
+        
+        /* 导航栏样式 */
+        .navbar-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            padding: 15px 30px;
+        }
+        .navbar-brand-custom {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff !important;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        .navbar-brand-custom:hover {
+            transform: translateY(-2px);
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+        }
+        .navbar-brand-custom .brand-icon {
+            font-size: 28px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .navbar-text-custom {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .navbar-text-custom .user-icon {
+            font-size: 16px;
+        }
+        .btn-nav-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-nav-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            color: white;
+        }
+        .btn-nav-logout {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+        .btn-nav-logout:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
+    <nav class="navbar navbar-dark navbar-custom">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">船舶端站管理系统 (MBP)</a>
+            <a class="navbar-brand-custom" href="/">
+                <span class="brand-icon">🚢</span>
+                <span>船舶端站管理系统</span>
+            </a>
             <div class="d-flex">
                 {% if user.is_authenticated %}
-                    <span class="navbar-text me-3">欢迎, {{ user.username }}!</span>
-                    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">登出</a>
+                    <span class="navbar-text navbar-text-custom me-4">
+                        <span class="user-icon">👤</span>
+                        <span>欢迎, {{ user.username }}!</span>
+                    </span>
+                    <a href="{% url 'logout' %}" class="btn btn-nav-custom btn-nav-logout">🚪 登出</a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-2">登录</a>
-                    <a href="{% url 'register' %}" class="btn btn-light btn-sm">注册</a>
+                    <a href="{% url 'login' %}" class="btn btn-nav-custom me-2">🔑 登录</a>
+                    <a href="{% url 'register' %}" class="btn btn-nav-custom" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);">📝 注册</a>
                 {% endif %}
             </div>
         </div>
@@ -30,31 +140,57 @@
 
     <div class="main-container">
         <div class="sidebar p-3">
+            <h6 class="sidebar-heading">主导航</h6>
             <ul class="nav flex-column">
                 <li class="nav-item">
-                    <a class="nav-link" href="/">首页</a>
+                    <a class="nav-link" href="/">
+                        <span class="nav-icon">🏠</span>
+                        <span>首页</span>
+                    </a>
                 </li>
                 {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'gis_page' %}">船舶信息地图</a>
+                    <a class="nav-link" href="{% url 'gis_page' %}">
+                        <span class="nav-icon">🗺️</span>
+                        <span>船舶信息地图</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'antenna' %}">端站数据与状态</a>
+                    <a class="nav-link" href="{% url 'antenna' %}">
+                        <span class="nav-icon">📡</span>
+                        <span>端站数据与状态</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'systemmanage' %}">端站系统管理</a>
+                    <a class="nav-link" href="{% url 'systemmanage' %}">
+                        <span class="nav-icon">⚙️</span>
+                        <span>端站系统管理</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'stationimport' %}">端站内基站信息管理</a>
+                    <a class="nav-link" href="{% url 'stationimport' %}">
+                        <span class="nav-icon">📥</span>
+                        <span>端站内基站信息管理</span>
+                    </a>
+                </li>
+                <h6 class="sidebar-heading">数据管理</h6>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'ship_list' %}">
+                        <span class="nav-icon">🚢</span>
+                        <span>船舶管理</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'ship_list' %}">船舶管理</a>
+                    <a class="nav-link" href="{% url 'terminal_list' %}">
+                        <span class="nav-icon">📟</span>
+                        <span>端站管理</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'terminal_list' %}">端站管理</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'base_station_list' %}">基站管理</a>
+                    <a class="nav-link" href="{% url 'base_station_list' %}">
+                        <span class="nav-icon">📍</span>
+                        <span>基站管理</span>
+                    </a>
                 </li>
                 {% endif %}
             </ul>
@@ -265,6 +401,21 @@
         // 页面加载完成后初始化提示框系统
         document.addEventListener('DOMContentLoaded', () => {
             initMessageSystem();
+            
+            // 自动高亮当前页面对应的导航链接
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.sidebar .nav-link');
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                // 精确匹配或首页特殊处理
+                if (currentPath === href || 
+                    (currentPath === '/' && href === '/') ||
+                    (currentPath.endsWith('/') && href === currentPath.slice(0, -1)) ||
+                    (href.endsWith('/') && currentPath === href.slice(0, -1))) {
+                    link.classList.add('active');
+                }
+            });
         });
         
         // WebSocket 连接代码

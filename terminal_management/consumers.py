@@ -239,6 +239,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                 payload['op'] = 'upgrade'
                 payload['op_sub'] = 'upload_file_delete'
                 payload['fileId'] = frontend_payload.get('fileId')
+                payload['pathName'] = frontend_payload.get('pathName')
                 
             elif module == 'software_upgrade':                      # 端站软件升级
                 payload['op'] = 'upgrade'

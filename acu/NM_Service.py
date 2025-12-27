@@ -79,7 +79,7 @@ JSON_TO_MODEL_MAP = {
 
 class NM_Service():
     # 缓存区大小
-    __MAX_BUFFER_LENGTH = 2048
+    __MAX_BUFFER_LENGTH = 4096
 
     def __init__(self):
         self.__udp_socket = None

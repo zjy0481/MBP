@@ -329,15 +329,26 @@ graph TD
 
 0. **启动Redis服务** 
 
-   请确保您的Redis服务器正在运行。如果您是通过包管理器（如apt, brew）或Docker安装的，它可能已作为后台服务启动。否则，请手动启动它。
+    请确保您的Redis服务器正在运行。如果您是通过包管理器（如apt, brew）或Docker安装的，它可能已作为后台服务启动。否则，请手动启动它。
 
-1. **终端 1: 启动UDP服务**
+1. **终端 1: 启动通信服务**
+
+   udp版本：
 
    ```bash
-python manage.py start_nm_service
+   python manage.py start_nm_service
+   ```
+
+   该服务会持续在后台运行，处理所有UDP和Redis指令。
+
+   quic版本：
+   ```bash
+   python manage.py start_nm_service_quic
    ```
    
-   该服务会持续在后台运行，处理所有UDP和Redis指令。
+   该服务会持续在后台运行，处理所有Quic和Redis指令。
+   
+   ==*注：以上两个版本可以同时运行==
 
 
 2. **终端 2: 启动Web服务器**
@@ -351,6 +362,6 @@ python manage.py start_nm_service
    ```bash
    daphne -b 192.168.0.115 -p 80 mbp_project.asgi:application
    ```
-   
+
    服务器将在 `your_ip:your_port` 端口上运行，处理所有HTTP和WebSocket请求。
 

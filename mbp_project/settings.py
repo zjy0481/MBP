@@ -79,6 +79,9 @@ WSGI_APPLICATION = "mbp_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+from config import get_config
+config = get_config()
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', 
@@ -86,7 +89,7 @@ DATABASES = {
         # 使用你的数据库名称
         'NAME': 'mbp_db', 
         'USER': 'root',  
-        'PASSWORD': '123456',
+        'PASSWORD': config.get('database_config.database_password', '123456'),
         'HOST': '127.0.0.1', 
         'PORT': '3306', 
     }

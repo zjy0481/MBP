@@ -30,14 +30,19 @@ from utils import gl_logger
 from terminal_management.models import TerminalReport
 from terminal_management import services
 from channels.layers import get_channel_layer
+from config import get_config
 
-# QUIC证书配置
-DEFAULT_CERT_FILE = "server.crt"  # 服务器证书路径
-DEFAULT_KEY_FILE = "server.key"   # 服务器私钥路径
-DEFAULT_IP = "192.168.3.28"
-DEFAULT_PORT = 39999
+config = get_config()
 
-# 定义映射字典（消息字段：数据库字段）- 与原版本保持一致
+# QUIC配置
+DEFAULT_CERT_FILE = config.get('quic_server_config.quic_cert_file', "server.crt")   # 服务器证书路径
+DEFAULT_KEY_FILE = config.get('quic_server_config.quic_key_file', "server.key")     # 服务器私钥路径
+DEFAULT_IP = config.get('quic_server_config.quic_host', "127.0.0.1")                # QUIC服务监听IP
+DEFAULT_PORT = config.get('quic_server_config.quic_port', 39999)                    # QUIC服务监听端口
+DEFAULT_ALPN_PROTOCOL = config.get('quic_server_config.quic_alpn_protocol', "comdi-nm-protocol")  # QUIC ALPN协议
+DEFAULT_IDLE_TIMEOUT = config.get('quic_server_config.quic_idle_timeout', 180.0)    # QUIC连接空闲超时时间（秒）
+
+# 定义映射字典（消息字段：数据库字段）
 JSON_TO_MODEL_MAP = {
     # 复合唯一约束字段 (Compound Unique Fields)
     'type': 'type',
@@ -84,7 +89,7 @@ JSON_TO_MODEL_MAP = {
 
 
 class NM_QUICProtocol(QuicConnectionProtocol):
-    """QUIC协议处理类 - 替换UDP监听"""
+    """QUIC协议处理类"""
 
     def __init__(self, *args, **kwargs):
         self.service_instance = kwargs.pop('service_instance')
@@ -134,7 +139,6 @@ class NM_QUICProtocol(QuicConnectionProtocol):
 class NM_ServiceQUIC:
     """
     NM_Service的QUIC版本
-    第二阶段：协议切换（UDP → QUIC），保持异步架构和API兼容
     """
     
     def __init__(self, 
@@ -176,8 +180,8 @@ class NM_ServiceQUIC:
         """创建QUIC配置"""
         configuration = QuicConfiguration(
             is_client=False,
-            alpn_protocols=["comdi-nm-protocol"],
-            idle_timeout=180.0,
+            alpn_protocols=[DEFAULT_ALPN_PROTOCOL],
+            idle_timeout=DEFAULT_IDLE_TIMEOUT,
         )
         
         # 检查证书文件

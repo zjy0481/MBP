@@ -31,9 +31,11 @@ from terminal_management import services
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from config import get_config
 
-DEFAULT_IP = "192.168.3.28"
-DEFAULT_PORT = 59999
+config = get_config()
+DEFAULT_IP = config.get('udp_server_config.udp_host', "127.0.0.1")      # UDP服务监听IP
+DEFAULT_PORT = config.get('udp_server_config.udp_port', 59999)          # UDP服务监听端口
 
 # 定义映射字典（消息字段：数据库字段）
 JSON_TO_MODEL_MAP = {

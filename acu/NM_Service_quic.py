@@ -34,7 +34,7 @@ from channels.layers import get_channel_layer
 # QUIC证书配置
 DEFAULT_CERT_FILE = "server.crt"  # 服务器证书路径
 DEFAULT_KEY_FILE = "server.key"   # 服务器私钥路径
-DEFAULT_IP = "127.0.0.1"
+DEFAULT_IP = "192.168.3.28"
 DEFAULT_PORT = 59999
 
 # 定义映射字典（消息字段：数据库字段）- 与原版本保持一致
@@ -299,7 +299,8 @@ class NM_ServiceQUIC:
                 decode_responses=True
             )
             self.redis_pubsub = self.redis_conn.pubsub()
-            await self.redis_pubsub.subscribe(udp_command=self._handle_redis_command)
+            # 先订阅频道，不传递回调函数
+            await self.redis_pubsub.subscribe('udp-command')
             gl_logger.info(f"NM_Service QUIC 已连接到 Redis 并监听 'udp-command' 频道")
         except Exception as e:
             gl_logger.error(f"NM_Service QUIC 连接 Redis 失败: {e}")

@@ -213,18 +213,36 @@ class TestClientProtocol(QuicConnectionProtocol):
                 
                 # 检查是否为控制指令（包含request_id）
                 request_id = msg.get('request_id')
+                op = msg.get('op')
+                op_sub = msg.get('op_sub')
                 if request_id:
-                    # 这是控制指令，回复确认消息
-                    reply_msg = {
-                        "type": "response",
-                        "sn": self.client.sn,
-                        "request_id": request_id,
-                        "status": "success",
-                        "message": f"成功收到指令：{json.dumps(msg, ensure_ascii=False)}"
-                    }
-                    
-                    logger.info(f"📤 回复控制指令: {reply_msg}")
-                    self.send_reply(reply_msg)
+                    if op == 'query' and op_sub == 'equipment_status':
+                        # 回复状态查询指令
+                        reply_msg = {
+                            "sn": self.client.sn,
+                            "op":"query_ans",
+                            "op_sub":"equipment_status",
+                            "request_id":request_id,
+                            "IMU_stat":0,
+                            "DGPS_stat":0,
+                            "storage_stat":0,
+                            "yaw_moto_stat":0,
+                            "pitch_moto_stat":0,
+                            "yaw_lim_stat":0,
+                            "pitch_lim_stat":0
+                        }
+                        self.send_reply(reply_msg)
+                        logger.info(f"📤 回复状态查询指令: {reply_msg}")
+                    else:
+                        # 其他查询指令，默认回复成功
+                        reply_msg = {
+                            "sn": self.client.sn,
+                            "op":"ans",
+                            "op_sub":op_sub,
+                            "status": "success",
+                            "message": f"成功收到查询指令：{json.dumps(msg, ensure_ascii=False)}"
+                        }
+                        self.send_reply(reply_msg)
                 else:
                     # 普通消息，直接回复确认
                     reply_msg = {

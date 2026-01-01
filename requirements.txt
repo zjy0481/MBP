@@ -14,4 +14,14 @@ mysqlclient
 # Redis client
 redis
 
+# Async Redis client
+aioredis
+
+# Async utilities
+asgiref
+
+# Async QUIC library (for future use)
+aioquic
+
+# Color logging
 colorlog

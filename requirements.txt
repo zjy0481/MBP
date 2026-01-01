@@ -25,3 +25,6 @@ aioquic
 
 # Color logging
 colorlog
+
+# Config
+toml

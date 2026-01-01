@@ -32,6 +32,9 @@ from terminal_management import services
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+DEFAULT_IP = "192.168.3.28"
+DEFAULT_PORT = 59999
+
 # 定义映射字典（消息字段：数据库字段）
 JSON_TO_MODEL_MAP = {
     # 复合唯一约束字段 (Compound Unique Fields)
@@ -84,7 +87,7 @@ class NM_Service():
     def __init__(self):
         self.__udp_socket = None
         # 绑定端口
-        self.__udp_addr = ("127.0.0.1", 59999)
+        self.__udp_addr = (DEFAULT_IP, DEFAULT_PORT)
 
         # UDP 的消息循环，负责监听UDP消息，接收后打包成事件发出
         self.__udp_loop_active = False
@@ -302,7 +305,7 @@ class NM_Service():
                         gl_logger.info(f"成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
 
                 gl_logger.info(f"成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
-            elif (sn and not op and not op_sub):
+            elif (sn and op == 'heartbeat'):
                 update_success, update_result = services.update_terminal_network_info(sn, peer_ip, peer_port)
                 if not update_success:
                     # 如果更新失败，只记录警告，不影响主流程

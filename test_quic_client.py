@@ -21,10 +21,15 @@ from aioquic.asyncio.protocol import QuicConnectionProtocol
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# 测试配置
+TEST_SERVER_HOST = "192.168.3.28"
+TEST_SERVER_PORT = 39999
+TEST_SN = "sn111111"
+
 class QUICTestClient:
     """QUIC测试客户端"""
     
-    def __init__(self, server_host="127.0.0.1", server_port=59999, sn="sn111111"):
+    def __init__(self, server_host=TEST_SERVER_HOST, server_port=TEST_SERVER_PORT, sn=TEST_SN):
         self.server_host = server_host
         self.server_port = server_port
         self.sn = sn
@@ -277,7 +282,7 @@ class TestClientProtocol(QuicConnectionProtocol):
 
 async def main():
     """主函数"""
-    client = QUICTestClient()
+    client = QUICTestClient(TEST_SERVER_HOST, TEST_SERVER_PORT, TEST_SN)
     
     try:
         # 启动客户端
@@ -285,7 +290,7 @@ async def main():
         
         if success:
             logger.info("🎉 客户端连接建立成功！")
-            logger.info("📱 SN: sn111111 已建立连接")
+            logger.info(f"📱 SN: {client.sn} 已建立连接")
             logger.info("💡 客户端将保持在线并响应服务器消息")
         else:
             logger.error("❌ 无法连接到服务器")
@@ -298,8 +303,8 @@ async def main():
 
 if __name__ == "__main__":
     print("🚀 启动QUIC测试客户端")
-    print(f"📱 SN: sn111111")
-    print(f"🌐 服务器: 127.0.0.1:59999")
+    print(f"📱 SN: {TEST_SN}")
+    print(f"🌐 服务器: {TEST_SERVER_HOST}:{TEST_SERVER_PORT}")
     print("=" * 50)
     
     try:

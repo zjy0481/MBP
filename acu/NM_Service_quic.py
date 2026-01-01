@@ -35,7 +35,7 @@ from channels.layers import get_channel_layer
 DEFAULT_CERT_FILE = "server.crt"  # 服务器证书路径
 DEFAULT_KEY_FILE = "server.key"   # 服务器私钥路径
 DEFAULT_IP = "192.168.3.28"
-DEFAULT_PORT = 59999
+DEFAULT_PORT = 39999
 
 # 定义映射字典（消息字段：数据库字段）- 与原版本保持一致
 JSON_TO_MODEL_MAP = {
@@ -399,7 +399,7 @@ class NM_ServiceQUIC:
 
                 gl_logger.info(f"QUIC成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
                 
-            elif (sn and not op and not op_sub):
+            elif (sn and op == 'heartbeat'):
                 # QUIC心跳包处理 - 仅维护SN映射，不更新数据库
                 self.register_sn_mapping(sn, client_id)
                 gl_logger.info(f"QUIC收到心跳包，成功处理SN: {sn} 的映射关系")

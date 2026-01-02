@@ -1,162 +1,133 @@
 // static/js/antenna.js
 
-// 这个函数将由 base.html 在 WebSocket 连接成功后自动调用
-function onSocketReady() {
-    console.log("Antenna.js: WebSocket is ready. Initializing page logic.");
+// 全局变量
+var ws = null;
+let selectedSn = null;
 
-    // --- 变量定义 ---
-    let selectedSn = null;
-    let selectedIp = null;
-    let selectedPort = null;
+// 初始化函数
+function init() {
+    console.log("Antenna.js: Initializing page...");
+    
+    // 初始化WebSocket连接
+    initWebSocket();
+    
+    // 绑定事件监听器
+    bindEventListeners();
+}
 
-    // --- 事件监听 ---
+// 初始化WebSocket连接
+function initWebSocket() {
+    // 创建WebSocket连接
+    ws = new WebSocket(
+        'ws://' + window.location.host + '/ws/data/'
+    );
+
+    // 连接打开事件
+    ws.onopen = function(e) {
+        console.log('Antenna: WebSocket connection established successfully.');
+    };
+
+    // 接收消息事件
+    ws.onmessage = function(e) {
+        try {
+            const data = JSON.parse(e.data);
+            if (data.message) {
+                handleWebSocketMessage(data.message);
+            }
+        } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+        }
+    };
+
+    // 连接关闭事件
+    ws.onclose = function(e) {
+        console.error('Antenna: WebSocket connection closed!');
+        // 尝试重连
+        setTimeout(initWebSocket, 5000);
+    };
+
+    // 错误事件
+    ws.onerror = function(e) {
+        console.error('Antenna: WebSocket error:', e);
+    };
+}
+
+// 绑定事件监听器
+function bindEventListeners() {
+    // 端站选择事件
     document.addEventListener('terminalSelected', function(e) {
         const detail = e.detail;
         console.log("Antenna page received selection:", detail);
 
         selectedSn = detail.sn;
-        selectedIp = detail.ip;
-        selectedPort = detail.port;
 
         // 重置UI状态
-        // document.getElementById('work_mode').value = "";
-        // const workModeStatus = document.getElementById('work_mode_status');
-        // workModeStatus.innerText = '当前模式：暂无数据';
-        // workModeStatus.className = 'form-text mt-2';
         cleanPageData();
         
         // 发起数据请求
         fetchLatestReport(selectedSn);
     });
 
-    // --- WebSocket消息处理 ---
-    // 定义 antenna.html 专属的 WebSocket 消息处理器
-    const antennaPageMessageHandler = function(message) {
-        console.log(message.type);
-        if (message.type === 'latest_report_data') {
-            const report = message.data;
-            
-            // 实时更新逻辑
-            if (report && report.sn === selectedSn) {
-                console.log(`收到当前选中端站 [${selectedSn}] 的实时数据，正在更新页面...`);
-                cleanPageData();
-                updatePageData(report);
-            } 
-            // 手动查询后没有数据的处理逻辑
-            else if (!report && message.sn === selectedSn) {
-                document.getElementById('selected_last_report').innerText = '暂无上报数据';
-                console.warn(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
-                cleanPageData();
-            }
-            
-        } else if (message.type === 'control_response') {
-            if (message.success) {
-                const responseData = message.data; // data 是端站返回的完整JSON
-                console.log(`成功收到来自端站的响应，模块: ${message.module}`);
-                
-                // --- 将端站响应信息反映到前端 ---
-
-                // 查询工作模式
-                // if (message.module === 'query_work_mode') {
-                //     // 检查响应是否符合协议
-                //     if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'work_pattern') {
-                //         const pattern = responseData.pattern; // "0" or "1"
-                //         const workModeSelect = document.getElementById('work_mode');
-                //         const workModeStatus = document.getElementById('work_mode_status');
-
-                //         workModeSelect.value = pattern; // 更新下拉框的选中值
-                //         const modeText = (pattern === '0') ? "自动模式" : "手动模式";
-                //         workModeStatus.innerText = `当前模式: ${modeText}`;
-                //         workModeStatus.className = 'mt-2 text-success'; // 移除旧class, 添加绿色class
-                //     } else {
-                //         // 如果响应格式不正确
-                //         const workModeStatus = document.getElementById('work_mode_status');
-                //         workModeStatus.innerText = '查询失败：端站响应格式错误';
-                //         workModeStatus.className = 'mt-2 text-danger'; // 设置为红色
-                //     }
-                // }
-                // // 设置工作模式
-                // else if (message.module === 'set_work_mode') {
-                //     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'work_pattern') {
-                //         if (responseData.result === '0') {
-                //             console.log('工作模式设置成功！');
-                //             sendControlCommand('query_work_mode');
-                //         } else {
-                //             console.error(`工作模式设置失败！\n原因: ${responseData.error || '未知'}`);
-                //         }
-                //     }
-                // }
-                // 查询设备状态，现在antenna只需要这一功能
-                if (message.module === 'query_device_status') {
-                    if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'equipment_status') {
-                        // 协议中 0=正常, 1=异常; setLight 函数 0=正常, 1=异常
-                        const statusMap = {
-                            IMUState: responseData.IMU_stat === 0 ? 0 : 1,
-                            DGPSState: responseData.DGPS_stat === 0 ? 0 : 1,
-                            storageState: responseData.storage_stat === 0 ? 0 : 1,
-                            yawMotoState: responseData.yaw_moto_stat === 0 ? 0 : 1,
-                            pitchMotoState: responseData.pitch_moto_stat === 0 ? 0 : 1,
-                            yawLimitState: responseData.yaw_lim_stat === 0 ? 0 : 1,
-                            pitchLimitState: responseData.pitch_lim_stat === 0 ? 0 : 1,
-                        };
-                        showDevicesStatus(statusMap);
-                        infoMessage('设备状态查询成功！');
-                    }
-                }
-                // // 手动控制天线旋转
-                // else if (message.module === 'turn_control') {
-                //     if (responseData && responseData.op === 'antenna_control_ans' && responseData.op_sub === 'rotate') {
-                //         if (responseData.result === '0') {
-                //             console.log('天线转动操作成功！');
-                //         } else {
-                //             console.error(`天线转动操作失败！\n原因: ${responseData.error || '未知'}`);
-                //         }
-                //     }
-                // }
-
-            } else {
-                errorMessage(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
-            }
-        }
-    };
-
-    // 将我们的专属处理器注册到 base.html 定义的全局列表中
-    if (window.webSocketOnMessageHandlers) {
-        window.webSocketOnMessageHandlers = [];
-        window.webSocketOnMessageHandlers.push(antennaPageMessageHandler);
-    }
-
-    // --- 为所有控制按钮绑定事件 ---
-    // 工作模式相关，已废弃
-    // document.getElementById('query_work_mode').addEventListener('click', () => sendControlCommand('query_work_mode'));
-    
-    // document.getElementById('set_work_mode').addEventListener('click', () => {
-    //     const workMode = document.getElementById('work_mode').value;
-    //     if (workMode === "") {
-    //         alert("请先选择一个工作模式再进行设置！");
-    //         return;
-    //     }
-    //     sendControlCommand('set_work_mode', { pattern: workMode });
-    // });
-    
-    // document.getElementById('turn_up').addEventListener('click', () => onTurn(1, 0));
-    // document.getElementById('turn_down').addEventListener('click', () => onTurn(1, 1));
-    // document.getElementById('turn_left').addEventListener('click', () => onTurn(0, 1));
-    // document.getElementById('turn_right').addEventListener('click', () => onTurn(0, 0));
-
+    // 为所有控制按钮绑定事件
     document.getElementById('query_devices_status').addEventListener('click', () => sendControlCommand('query_device_status'));
 }
 
+// 处理WebSocket消息
+function handleWebSocketMessage(message) {
+    console.log(message.type);
+    if (message.type === 'latest_report_data') {
+        const report = message.data;
+        
+        // 实时更新逻辑
+        if (report && report.sn === selectedSn) {
+            console.log(`收到当前选中端站 [${selectedSn}] 的实时数据，正在更新页面...`);
+            cleanPageData();
+            updatePageData(report);
+        } 
+        // 手动查询后没有数据的处理逻辑
+        else if (!report && message.sn === selectedSn) {
+            document.getElementById('selected_last_report').innerText = '暂无上报数据';
+            console.warn(`未能获取到SN为 ${message.sn} 的最新上报数据。`);
+            cleanPageData();
+        }
+        
+    } else if (message.type === 'control_response') {
+        if (message.success) {
+            const responseData = message.data; // data 是端站返回的完整JSON
+            console.log(`成功收到来自端站的响应，模块: ${message.module}`);
+            
+            // 查询设备状态，现在antenna只需要这一功能
+            if (message.module === 'query_device_status') {
+                if (responseData && responseData.op === 'query_ans' && responseData.op_sub === 'equipment_status') {
+                    // 协议中 0=正常, 1=异常; setLight 函数 0=正常, 1=异常
+                    const statusMap = {
+                        IMUState: responseData.IMU_stat === 0 ? 0 : 1,
+                        DGPSState: responseData.DGPS_stat === 0 ? 0 : 1,
+                        storageState: responseData.storage_stat === 0 ? 0 : 1,
+                        yawMotoState: responseData.yaw_moto_stat === 0 ? 0 : 1,
+                        pitchMotoState: responseData.pitch_moto_stat === 0 ? 0 : 1,
+                        yawLimitState: responseData.yaw_lim_stat === 0 ? 0 : 1,
+                        pitchLimitState: responseData.pitch_lim_stat === 0 ? 0 : 1,
+                    };
+                    showDevicesStatus(statusMap);
+                    infoMessage('设备状态查询成功！');
+                }
+            }
+        } else {
+            errorMessage(`操作失败！\n模块: ${message.module}\n错误信息: ${message.error}`);
+        }
+    }
+}
 
-// --- 以下函数不依赖于 WebSocket 的连接状态，可以放在 onSocketReady 外部 ---
+// --- 以下函数不依赖于 WebSocket 的连接状态，可以放在 initWebSocket 外部 ---
 
 function fetchLatestReport(sn) {
-    // 此处调用时，可以确信 dataSocket 已经连接成功
+    // 此处调用时，可以确信 WebSocket 已经连接成功
     const message = {
         'type': 'get_latest_report',
         'sn': sn
     };
-    window.dataSocket.send(JSON.stringify(message));
+    ws.send(JSON.stringify(message));
 }
 
 function sendControlCommand(module, payload = {}) {
@@ -172,7 +143,7 @@ function sendControlCommand(module, payload = {}) {
     const message = {
         type: 'control_command', sn, ip, port, module, payload
     };
-    window.dataSocket.send(JSON.stringify(message));
+    ws.send(JSON.stringify(message));
 }
 
 function onTurn(axis, direct) {
@@ -210,22 +181,53 @@ function cleanPageData() {
     showLinkspeed({ upstream: '', downstream: '' });
     showNetworkState({
         plmn: 0, standard: '', cellid: '',
-        pci: '', rsrp: '', rssi: '', sinr: ''
+        pci: '', rsrp: -1, rssi: '', sinr: ''
     });
-    console.log("清理页面完成");
+    setLight("IMUState", -1);
+    setLight("DGPSState", -1);
+    setLight("storageState", -1);
+    setLight("yawMotoState", -1);
+    setLight("pitchMotoState", -1);
+    setLight("yawLimitState", -1);
+    setLight("pitchLimitState", -1);
+    // console.log("清理页面完成");
 }
 
 function updatePageData(report) {
     console.log("report如下", report);
-    if (report.report_date && report.report_time) {
-        document.getElementById('selected_last_report').innerText = `${report.report_date} ${report.report_time}`;
+    
+    // 检查数据是否过期（超过7天）
+    // todo 后续可以将判断数据是否过旧的阈值加入config
+    if (report.report_date) {
+        const reportDate = new Date(report.report_date + 'T00:00:00+08:00'); // 东八区时间
+        const now = new Date();
+        const chinaNow = new Date(now.getTime() + (8 * 60 * 60 * 1000)); // 转换为东八区时间
+        
+        // 计算7天前的日期
+        const sevenDaysAgo = new Date(chinaNow.getTime() - (7 * 24 * 60 * 60 * 1000));
+        
+        // 如果数据超过7天，显示红色时间并停止更新
+        if (reportDate < sevenDaysAgo) {
+            const reportTime = report.report_time ? `${report.report_date} ${report.report_time}` : report.report_date;
+            const lastReportNode = document.getElementById('selected_last_report');
+            lastReportNode.innerHTML = `<span style="color: red; font-weight: bold;">⚠ ${reportTime} (数据过旧，不做显示)</span>`;
+            console.log(`数据过期：${reportTime}，超过7天，停止页面更新`);
+            return; // 不进行后续页面更新
+        }
     }
-    console.log("系统状态、无线网络状态:",report.system_stat,", ",report.wireless_network_stat);
+    
+    // 数据未过期，正常显示时间并更新页面
+    if (report.report_date && report.report_time) {
+        const lastReportNode = document.getElementById('selected_last_report');
+        lastReportNode.innerHTML = `${report.report_date} ${report.report_time}`;
+    }
+    
+    // console.log("系统状态、无线网络状态:",report.system_stat,", ",report.wireless_network_stat);
     let system_state = parseInt(report.system_stat, 10);
     let wireless_network_state = parseInt(report.wireless_network_stat, 10);
     setSystemStatus(system_state);
     setLinkStatus(wireless_network_state);
-    console.log("转换后的系统状态、无线网络状态:",report.system_stat,", ",report.wireless_network_stat);
+    // console.log("转换后的系统状态、无线网络状态:",report.system_stat,", ",report.wireless_network_stat);
     document.getElementById("bts_name").value = report.bts_name || "";
     document.getElementById("bts_no").value = report.bts_number || "";
     document.getElementById("bts_longitude").value = parseFloat(report.bts_long)?.toFixed(3) || "";
@@ -251,13 +253,17 @@ function updatePageData(report) {
 // 系统状态
 function setSystemStatus(status) {
     let lights = document.querySelectorAll("#antenna_status .statusLight");
-    lights.forEach(light => light.style.backgroundColor = "lightgray");
+    // 清除所有状态类
+    lights.forEach(light => {
+        light.classList.remove('active', 'error', 'warning', 'info');
+    });
+    
     switch (status) {
-        case 0: document.getElementById("light_none").style.backgroundColor = "limegreen"; break;
-        case 1: document.getElementById("light_init").style.backgroundColor = "limegreen"; break;
-        case 2: document.getElementById("light_presearch").style.backgroundColor = "limegreen"; break;
-        case 3: document.getElementById("light_track").style.backgroundColor = "limegreen"; break;
-        case 4: document.getElementById("light_fault").style.backgroundColor = "red"; break;
+        case 0: document.getElementById("light_none").classList.add('warning'); break;
+        case 1: document.getElementById("light_init").classList.add('info'); break;
+        case 2: document.getElementById("light_presearch").classList.add('info'); break;
+        case 3: document.getElementById("light_track").classList.add('active'); break;
+        case 4: document.getElementById("light_fault").classList.add('error'); break;
         default: 
     }
 }
@@ -265,11 +271,15 @@ function setSystemStatus(status) {
 // 无限网络状态
 function setLinkStatus(status) {
     let lights = document.querySelectorAll("#link_status .statusLight");
-    lights.forEach(light => light.style.backgroundColor = "lightgray");
+    // 清除所有状态类
+    lights.forEach(light => {
+        light.classList.remove('active', 'error', 'warning', 'info');
+    });
+    
     switch (status) {
-        case 0: document.getElementById("dtu_unlink").style.backgroundColor = "red"; break;
-        case 1: document.getElementById("dtu_state_dial").style.backgroundColor = "limegreen"; break;
-        case 2: document.getElementById("dtu_state_normal").style.backgroundColor = "limegreen"; break;
+        case 0: document.getElementById("dtu_unlink").classList.add('error'); break;
+        case 1: document.getElementById("dtu_state_dial").classList.add('active'); break;
+        case 2: document.getElementById("dtu_state_normal").classList.add('active'); break;
         default: 
     }
 }
@@ -286,9 +296,31 @@ function setYawLimit(state) {
 }
 
 // 网络速率
+function formatBandwidth(bps) {
+    if (!bps || bps <= 0) {
+        return '0 bps';
+    }
+    
+    // 单位转换
+    if (bps < 1000) {
+        // 小于1000 bps，直接显示
+        return `${bps} bps`;
+    } else if (bps < 1000 * 1000) {
+        // 小于1000 Kbps，转换为Kbps
+        const kbps = bps / 1000;
+        return `${kbps.toFixed(kbps < 10 ? 2 : 1)} Kbps`;
+    } else {
+        // 大于等于1000 Kbps，转换为Mbps
+        const mbps = bps / (1000 * 1000);
+        return `${mbps.toFixed(mbps < 10 ? 2 : 1)} Mbps`;
+    }
+}
+
 function showLinkspeed(stream) {
     const node = document.getElementById("link_speed");
-    node.innerHTML = `<h4> 上行：${stream.upstream || 0} Mbps&nbsp;&nbsp;下行：${stream.downstream || 0} Mbps</h4>`;
+    const upstream = formatBandwidth(stream.upstream);
+    const downstream = formatBandwidth(stream.downstream);
+    node.innerHTML = `<h4> 上行：${upstream}&nbsp;&nbsp;下行：${downstream}</h4>`;
 }
 
 function showNetworkState(param) {
@@ -304,7 +336,7 @@ function showNetworkState(param) {
     document.getElementById("dtu_standard").value = param.standard || '';
     document.getElementById("dtu_cellid").value = param.cellid || '';
     document.getElementById("dtu_pci").value = param.pci || '';
-    document.getElementById("dtu_rsrp").value = param.rsrp || '';
+    document.getElementById("dtu_rsrp").value = param.rsrp == -1 ? '' : param.rsrp || '';
     document.getElementById("dtu_rssi").value = param.rssi || '';
     document.getElementById("dtu_sinr").value = param.sinr || '';
 
@@ -312,18 +344,23 @@ function showNetworkState(param) {
     if (param.rsrp){
         const rsrpValue = document.getElementById("rsrp_value");
         const rsrpMeter = document.getElementById("rsrp_meter");
-        rsrpValue.innerHTML = `<h1>${param.rsrp || '?'} dBm</h1>`;
-        rsrpMeter.value = param.rsrp ? parseFloat(param.rsrp) + 150 : 0;
+        rsrpValue.innerHTML = `<h1>${param.rsrp == -1 ? '?' : param.rsrp || '?'} dBm</h1>`;
+        rsrpMeter.value = param.rsrp == -1 ? 0 : parseFloat(param.rsrp) + 150 || 0;
     }
 }
 
 function setLight(id, status) {
     const light = document.getElementById(id);
     if (light) {
+        // 清除所有状态类
+        light.classList.remove('active', 'error', 'warning', 'info');
+        
         switch (status) {
-            case 0: light.style.backgroundColor = "limegreen"; break;
-            case 1: light.style.backgroundColor = "red"; break;
-            default: light.style.backgroundColor = "lightgray";
+            case 0: light.classList.add('active'); break;
+            case 1: light.classList.add('error'); break;
+            case 2: light.classList.add('warning'); break;
+            case 3: light.classList.add('info'); break;
+            default: // 保持默认状态
         }
     }
 }
@@ -338,3 +375,6 @@ function showDevicesStatus(status) {
     setLight("yawLimitState", status.yawLimitState);
     setLight("pitchLimitState", status.pitchLimitState);
 }
+
+// 页面初始化
+init();

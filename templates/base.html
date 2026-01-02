@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}船舶端站管理系统{% endblock %}</title>
+    <title>{% block title %}船载伺服基站天线管理系统{% endblock %}</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { display: flex; min-height: 100vh; flex-direction: column; }
@@ -121,7 +121,7 @@
         <div class="container-fluid">
             <a class="navbar-brand-custom" href="/">
                 <span class="brand-icon">🚢</span>
-                <span>船舶端站管理系统</span>
+                <span>船载伺服基站天线管理系统</span>
             </a>
             <div class="d-flex">
                 {% if user.is_authenticated %}
@@ -170,14 +170,14 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'stationimport' %}">
                         <span class="nav-icon">📥</span>
-                        <span>端站内基站信息管理</span>
+                        <span>端站宏站信息管理</span>
                     </a>
                 </li>
                 <h6 class="sidebar-heading">数据管理</h6>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'ship_list' %}">
-                        <span class="nav-icon">🚢</span>
-                        <span>船舶管理</span>
+                    <a class="nav-link" href="{% url 'base_station_list' %}">
+                        <span class="nav-icon">📍</span>
+                        <span>宏站管理</span>
                     </a>
                 </li>
                 <li class="nav-item">
@@ -187,9 +187,9 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'base_station_list' %}">
-                        <span class="nav-icon">📍</span>
-                        <span>基站管理</span>
+                    <a class="nav-link" href="{% url 'ship_list' %}">
+                        <span class="nav-icon">🚢</span>
+                        <span>船舶管理</span>
                     </a>
                 </li>
                 {% endif %}

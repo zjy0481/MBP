@@ -185,6 +185,7 @@ class TerminalReport(models.Model):
     bts_r = models.FloatField(verbose_name="基站覆盖半径(公里)", blank=True, null=True)
 
     # -- 通信质量信息 --
+    # todo 上下行速率实际单位为bps，待修改
     upstream_rate = models.FloatField(verbose_name="上行速率(Mbps)", blank=True, null=True)
     downstream_rate = models.FloatField(verbose_name="下行速率(Mbps)", blank=True, null=True)
     standard = models.CharField(max_length=50, verbose_name="通信制式", blank=True, null=True)

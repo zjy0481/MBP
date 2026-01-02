@@ -9,13 +9,156 @@
 
 {% block interactive_content %}
 <style>
-    .statusLight{width: 12px;height: 12px;border: 2px solid gray;background-color: lightgray;
-                                    box-shadow: 1px 2px 5px darkgray;border-radius: 50%;margin-left: 0px;list-style: none;}
+    /* 美化的状态指示灯样式 */
+    .statusLight {
+        width: 18px;
+        height: 18px;
+        border: none;
+        background-color: #e9ecef;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: block;
+        position: relative;
+        transition: all 0.3s ease;
+        box-shadow: 
+            0 2px 4px rgba(0, 0, 0, 0.1),
+            inset 0 1px 2px rgba(255, 255, 255, 0.8),
+            inset 0 -1px 2px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* 默认状态 - 灰色 */
+    .statusLight::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        right: 2px;
+        bottom: 2px;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+        border-radius: 50%;
+        pointer-events: none;
+    }
+    
+    /* 活跃状态 - 绿色 */
+    .statusLight.active {
+        background: linear-gradient(145deg, #28a745, #20c997);
+        box-shadow: 
+            0 0 15px rgba(40, 167, 69, 0.6),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        animation: pulse-green 2s infinite;
+    }
+    
+    /* 错误状态 - 红色 */
+    .statusLight.error {
+        background: linear-gradient(145deg, #dc3545, #e74c3c);
+        box-shadow: 
+            0 0 15px rgba(220, 53, 69, 0.6),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        animation: pulse-red 2s infinite;
+    }
+    
+    /* 警告状态 - 橙色 */
+    .statusLight.warning {
+        background: linear-gradient(145deg, #fd7e14, #f39c12);
+        box-shadow: 
+            0 0 15px rgba(253, 126, 20, 0.6),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        animation: pulse-orange 2s infinite;
+    }
+    
+    /* 信息状态 - 蓝色 */
+    .statusLight.info {
+        background: linear-gradient(145deg, #17a2b8, #3498db);
+        box-shadow: 
+            0 0 15px rgba(23, 162, 184, 0.6),
+            0 2px 8px rgba(0, 0, 0, 0.2),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+        animation: pulse-blue 2s infinite;
+    }
+    
+    /* 动画效果 */
+    @keyframes pulse-green {
+        0%, 100% { 
+            box-shadow: 
+                0 0 15px rgba(40, 167, 69, 0.6),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        50% { 
+            box-shadow: 
+                0 0 25px rgba(40, 167, 69, 0.9),
+                0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+    }
+    
+    @keyframes pulse-red {
+        0%, 100% { 
+            box-shadow: 
+                0 0 15px rgba(220, 53, 69, 0.6),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        50% { 
+            box-shadow: 
+                0 0 25px rgba(220, 53, 69, 0.9),
+                0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+    }
+    
+    @keyframes pulse-orange {
+        0%, 100% { 
+            box-shadow: 
+                0 0 15px rgba(253, 126, 20, 0.6),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        50% { 
+            box-shadow: 
+                0 0 25px rgba(253, 126, 20, 0.9),
+                0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+    }
+    
+    @keyframes pulse-blue {
+        0%, 100% { 
+            box-shadow: 
+                0 0 15px rgba(23, 162, 184, 0.6),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        50% { 
+            box-shadow: 
+                0 0 25px rgba(23, 162, 184, 0.9),
+                0 2px 12px rgba(0, 0, 0, 0.3);
+        }
+    }
+    
     /* 为表单标签设置固定宽度，使分隔处对齐 */
     .input-group-text {
         min-width: 150px;
         text-align: right;
         padding-right: 15px;
+    }
+    
+    /* 表格增强样式 */
+    .table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+    
+    .table-bordered {
+        border: 1px solid #dee2e6;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 图例样式增强 */
+    legend {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #495057;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 1rem;
     }
 </style>
 <div class="row mb-3">

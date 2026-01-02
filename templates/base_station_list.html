@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}基站管理 - {{ block.super }}{% endblock %}
+{% block title %}宏站管理 - {{ block.super }}{% endblock %}
 
 {% block content %}
-<h2>基站管理</h2>
+<h2>宏站管理</h2>
 <a href="{% url 'base_station_create' %}" class="btn btn-primary mb-3">添加新基站</a>
 
 {% if error %}

@@ -1,7 +1,7 @@
 // stationimport.js
 
 // 全局变量
-let ws = null;
+var ws = null;
 let currentTerminalSN = null;
 
 // 初始化函数

@@ -19,7 +19,7 @@ quic_idle_timeout = 180.0
 
 [udp_server_config]
 # UDP服务配置
-udp_host = "192.168.3.28"
+udp_host = "127.0.0.1"
 udp_port = 59999
 
 [web_server_config]

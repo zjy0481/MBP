@@ -378,11 +378,15 @@ function getTerminalBtsList() {
         if (btsIdInput && btsNameInput && btsRegionInput && btsCoverageInput && btsLongitudeInput && btsLatitudeInput) {
             const btsId = btsIdInput.value.trim();
             const btsName = btsNameInput.value.trim();
-            const regionCode = btsRegionInput.value.trim();
+            let regionCode = btsRegionInput.value.trim();
             const coverageDistance = btsCoverageInput.value.trim();
             const longitude = btsLongitudeInput.value.trim();
             const latitude = btsLatitudeInput.value.trim();
             
+            if (regionCode == '' || regionCode == '地区号') {
+                regionCode = 999999999;
+            }
+
             // 确保基站ID不为空
             if (btsId) {
                 btsList.push({

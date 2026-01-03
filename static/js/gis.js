@@ -536,6 +536,15 @@ function setupEventListeners() {
         shipListItems.forEach(li => li.classList.remove('active'));
         target.classList.add('active');
         currentSn = target.dataset.sn;
+        
+        // 保存端站选择到全局状态
+        const terminalData = {
+            sn: target.dataset.sn,
+            name: target.textContent.trim(),
+            selectedAt: new Date().toISOString()
+        };
+        setCurrentTerminal(terminalData);
+        
         fetchAndDrawPath(target.dataset.sn);
     });
 
@@ -565,6 +574,26 @@ function setupEventListeners() {
 
 // 初始化默认船只轨迹
 function initializeDefaultShip() {
+    // 尝试从全局状态获取已保存的端站选择
+    const savedTerminal = getCurrentTerminal();
+    
+    // 优先使用全局状态中保存的端站选择
+    if (savedTerminal && savedTerminal.sn) {
+        console.log("使用全局状态中保存的端站选择:", savedTerminal);
+        const terminalElement = document.querySelector(`#ship-list-container .list-group-item[data-sn="${savedTerminal.sn}"]`);
+        if (terminalElement) {
+            // 清除所有活动状态并设置当前端站为活动状态
+            shipListItems.forEach(li => li.classList.remove('active'));
+            terminalElement.classList.add('active');
+            
+            // 更新当前船舶SN并绘制轨迹
+            currentSn = savedTerminal.sn;
+            fetchAndDrawPath(savedTerminal.sn);
+            return;
+        }
+    }
+    
+    // 如果全局状态中没有有效的端站选择，则使用第一个端站
     const firstShipElement = document.querySelector('#ship-list-container .list-group-item[data-sn]');
     if (firstShipElement) {
         const defaultSn = firstShipElement.dataset.sn;

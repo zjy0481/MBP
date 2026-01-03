@@ -54,7 +54,7 @@ function initWebSocket() {
 
 // 绑定事件监听器
 function bindEventListeners() {
-    // 端站选择事件
+    // 监听端站选择事件
     document.addEventListener('terminalSelected', function(e) {
         const detail = e.detail;
         console.log("Antenna page received selection:", detail);
@@ -67,6 +67,50 @@ function bindEventListeners() {
         // 发起数据请求
         fetchLatestReport(selectedSn);
     });
+
+    // 监听全局端站状态变化
+    if (window.globalTerminalState) {
+        window.globalTerminalState.subscribe(function(terminal) {
+            if (terminal && terminal.sn) {
+                console.log("Antenna page received global terminal change:", terminal);
+                selectedSn = terminal.sn;
+                
+                // 查找并设置对应的端站项为活动状态
+                const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+                terminalItems.forEach(item => {
+                    if (item.dataset.sn === terminal.sn) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+                
+                // 重置UI状态
+                cleanPageData();
+                
+                // 发起数据请求
+                fetchLatestReport(selectedSn);
+            }
+        });
+    }
+
+    // 初始化时尝试从全局状态获取已保存的端站选择
+    const savedTerminal = getCurrentTerminal();
+    if (savedTerminal && savedTerminal.sn) {
+        console.log("Antenna: 初始化时从全局状态获取到端站选择:", savedTerminal);
+        selectedSn = savedTerminal.sn;
+        
+        // 查找并设置对应的端站项为活动状态
+        const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+        terminalItems.forEach(item => {
+            if (item.dataset.sn === savedTerminal.sn) {
+                item.classList.add('active');
+            }
+        });
+        
+        // 发起数据请求
+        fetchLatestReport(selectedSn);
+    }
 
     // 为所有控制按钮绑定事件
     document.getElementById('query_devices_status').addEventListener('click', () => sendControlCommand('query_device_status'));

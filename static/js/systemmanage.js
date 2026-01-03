@@ -163,6 +163,53 @@ function bindEventListeners() {
         // 获取服务器升级文件列表
         getServerUpgradeFiles(false);
     });
+
+    // 监听全局端站状态变化
+    if (window.globalTerminalState) {
+        window.globalTerminalState.subscribe(function(terminal) {
+            if (terminal && terminal.sn) {
+                console.log("SystemManage page received global terminal change:", terminal);
+                currentTerminalSN = terminal.sn;
+                
+                // 查找并设置对应的端站项为活动状态
+                const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+                terminalItems.forEach(item => {
+                    if (item.dataset.sn === terminal.sn) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                });
+                
+                // 切换端站时，重置所有状态
+                resetAllStatus();
+                
+                // 获取服务器升级文件列表
+                getServerUpgradeFiles(false);
+            }
+        });
+    }
+
+    // 初始化时尝试从全局状态获取已保存的端站选择
+    const savedTerminal = getCurrentTerminal();
+    if (savedTerminal && savedTerminal.sn) {
+        console.log("SystemManage: 初始化时从全局状态获取到端站选择:", savedTerminal);
+        currentTerminalSN = savedTerminal.sn;
+        
+        // 查找并设置对应的端站项为活动状态
+        const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+        terminalItems.forEach(item => {
+            if (item.dataset.sn === savedTerminal.sn) {
+                item.classList.add('active');
+            }
+        });
+        
+        // 重置所有状态
+        resetAllStatus();
+        
+        // 获取服务器升级文件列表
+        getServerUpgradeFiles(false);
+    }
 }
 
 // 格式化文件大小为易读格式

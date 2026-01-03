@@ -418,6 +418,90 @@
             });
         });
         
+        // --- 全局端站状态管理 ---
+        // 全局端站状态对象
+        window.globalTerminalState = {
+            currentTerminal: null, // {sn, ip, port, shipName, mmsi}
+            subscribers: [], // 订阅状态变化的对象列表
+            // 设置当前端站
+            setTerminal: function(terminalData) {
+                this.currentTerminal = terminalData;
+                // 保存到sessionStorage以实现跨页面持久化，但只在当前会话中有效
+                sessionStorage.setItem('globalSelectedTerminal', JSON.stringify(terminalData));
+                // 通知所有订阅者
+                this.notifySubscribers();
+                console.log('Global: 已设置当前端站:', terminalData);
+            },
+            // 获取当前端站
+            getTerminal: function() {
+                // 如果当前状态为空，尝试从sessionStorage恢复
+                if (!this.currentTerminal) {
+                    const saved = sessionStorage.getItem('globalSelectedTerminal');
+                    if (saved) {
+                        try {
+                            this.currentTerminal = JSON.parse(saved);
+                        } catch (e) {
+                            console.warn('Global: 恢复端站状态失败:', e);
+                        }
+                    }
+                }
+                return this.currentTerminal;
+            },
+            // 清除当前端站
+            clearTerminal: function() {
+                this.currentTerminal = null;
+                sessionStorage.removeItem('globalSelectedTerminal');
+                this.notifySubscribers();
+                console.log('Global: 已清除当前端站');
+            },
+            // 订阅状态变化
+            subscribe: function(callback) {
+                if (typeof callback === 'function') {
+                    this.subscribers.push(callback);
+                }
+            },
+            // 取消订阅
+            unsubscribe: function(callback) {
+                const index = this.subscribers.indexOf(callback);
+                if (index > -1) {
+                    this.subscribers.splice(index, 1);
+                }
+            },
+            // 通知所有订阅者
+            notifySubscribers: function() {
+                this.subscribers.forEach(callback => {
+                    try {
+                        callback(this.currentTerminal);
+                    } catch (e) {
+                        console.error('Global: 端站状态变化通知失败:', e);
+                    }
+                });
+            }
+        };
+        
+        // 全局函数：设置当前端站
+        window.setCurrentTerminal = function(terminalData) {
+            window.globalTerminalState.setTerminal(terminalData);
+        };
+        
+        // 全局函数：获取当前端站
+        window.getCurrentTerminal = function() {
+            return window.globalTerminalState.getTerminal();
+        };
+        
+        // 全局函数：清除当前端站
+        window.clearCurrentTerminal = function() {
+            window.globalTerminalState.clearTerminal();
+        };
+        
+        // 监听页面卸载事件，保存状态
+        window.addEventListener('beforeunload', function() {
+            const terminal = window.globalTerminalState.getTerminal();
+            if (terminal) {
+                sessionStorage.setItem('globalSelectedTerminal', JSON.stringify(terminal));
+            }
+        });
+
         // WebSocket 连接代码
         window.dataSocket = new WebSocket(
             'ws://' + window.location.host + '/ws/data/'

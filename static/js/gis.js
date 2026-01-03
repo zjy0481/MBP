@@ -195,7 +195,7 @@ function initializePageLogic() {
     setupEventListeners();
     
     // 初始化默认船只轨迹
-    initializeDefaultShip();
+    setTimeout(initializeDefaultShip, 100); // 0.1秒后初始化，确保WebSocket连接已建立
 }
 
 // WGS84 to BD-09 坐标转换函数

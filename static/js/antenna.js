@@ -25,6 +25,25 @@ function initWebSocket() {
     // 连接打开事件
     ws.onopen = function(e) {
         console.log('Antenna: WebSocket connection established successfully.');
+        
+        // WebSocket连接建立后，尝试从全局状态获取已保存的端站选择
+        // 这样可以确保在WebSocket连接建立后再发送请求
+        const savedTerminal = getCurrentTerminal();
+        if (savedTerminal && savedTerminal.sn) {
+            console.log("Antenna: WebSocket连接后从全局状态获取到端站选择:", savedTerminal);
+            selectedSn = savedTerminal.sn;
+            
+            // 查找并设置对应的端站项为活动状态
+            const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+            terminalItems.forEach(item => {
+                if (item.dataset.sn === savedTerminal.sn) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // 发起数据请求
+            fetchLatestReport(selectedSn);
+        }
     };
 
     // 接收消息事件
@@ -95,22 +114,23 @@ function bindEventListeners() {
     }
 
     // 初始化时尝试从全局状态获取已保存的端站选择
-    const savedTerminal = getCurrentTerminal();
-    if (savedTerminal && savedTerminal.sn) {
-        console.log("Antenna: 初始化时从全局状态获取到端站选择:", savedTerminal);
-        selectedSn = savedTerminal.sn;
-        
-        // 查找并设置对应的端站项为活动状态
-        const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
-        terminalItems.forEach(item => {
-            if (item.dataset.sn === savedTerminal.sn) {
-                item.classList.add('active');
-            }
-        });
-        
-        // 发起数据请求
-        fetchLatestReport(selectedSn);
-    }
+    // 注意：这个逻辑现在移到了ws.onopen事件处理器中，确保WebSocket连接建立后再执行
+    // const savedTerminal = getCurrentTerminal();
+    // if (savedTerminal && savedTerminal.sn) {
+    //     console.log("Antenna: 初始化时从全局状态获取到端站选择:", savedTerminal);
+    //     selectedSn = savedTerminal.sn;
+    //     
+    //     // 查找并设置对应的端站项为活动状态
+    //     const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+    //     terminalItems.forEach(item => {
+    //         if (item.dataset.sn === savedTerminal.sn) {
+    //             item.classList.add('active');
+    //         }
+    //     });
+    //     
+    //     // 发起数据请求
+    //     fetchLatestReport(selectedSn);
+    // }
 
     // 为所有控制按钮绑定事件
     document.getElementById('query_devices_status').addEventListener('click', () => sendControlCommand('query_device_status'));

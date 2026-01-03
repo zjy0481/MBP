@@ -25,6 +25,28 @@ function initWebSocket() {
     // 连接打开事件
     ws.onopen = function(e) {
         console.log('SystemManage: WebSocket connection established successfully.');
+        
+        // WebSocket连接建立后，尝试从全局状态获取已保存的端站选择
+        // 这样可以确保在WebSocket连接建立后再发送请求
+        const savedTerminal = getCurrentTerminal();
+        if (savedTerminal && savedTerminal.sn) {
+            console.log("SystemManage: WebSocket连接后从全局状态获取到端站选择:", savedTerminal);
+            currentTerminalSN = savedTerminal.sn;
+            
+            // 查找并设置对应的端站项为活动状态
+            const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+            terminalItems.forEach(item => {
+                if (item.dataset.sn === savedTerminal.sn) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // 重置所有状态
+            resetAllStatus();
+            
+            // 获取服务器升级文件列表
+            getServerUpgradeFiles(false);
+        }
     };
 
     // 接收消息事件
@@ -191,25 +213,26 @@ function bindEventListeners() {
     }
 
     // 初始化时尝试从全局状态获取已保存的端站选择
-    const savedTerminal = getCurrentTerminal();
-    if (savedTerminal && savedTerminal.sn) {
-        console.log("SystemManage: 初始化时从全局状态获取到端站选择:", savedTerminal);
-        currentTerminalSN = savedTerminal.sn;
-        
-        // 查找并设置对应的端站项为活动状态
-        const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
-        terminalItems.forEach(item => {
-            if (item.dataset.sn === savedTerminal.sn) {
-                item.classList.add('active');
-            }
-        });
-        
-        // 重置所有状态
-        resetAllStatus();
-        
-        // 获取服务器升级文件列表
-        getServerUpgradeFiles(false);
-    }
+    // 注意：这个逻辑现在移到了ws.onopen事件处理器中，确保WebSocket连接建立后再执行
+    // const savedTerminal = getCurrentTerminal();
+    // if (savedTerminal && savedTerminal.sn) {
+    //     console.log("SystemManage: 初始化时从全局状态获取到端站选择:", savedTerminal);
+    //     currentTerminalSN = savedTerminal.sn;
+    //     
+    //     // 查找并设置对应的端站项为活动状态
+    //     const terminalItems = document.querySelectorAll('#terminal-list .list-group-item');
+    //     terminalItems.forEach(item => {
+    //         if (item.dataset.sn === savedTerminal.sn) {
+    //             item.classList.add('active');
+    //         }
+    //     });
+    //     
+    //     // 重置所有状态
+    //     resetAllStatus();
+    //     
+    //     // 获取服务器升级文件列表
+    //     getServerUpgradeFiles(false);
+    // }
 }
 
 // 格式化文件大小为易读格式

@@ -95,6 +95,7 @@ class NM_QUICProtocol(QuicConnectionProtocol):
         self.service_instance = kwargs.pop('service_instance')
         super().__init__(*args, **kwargs)
         self.client_id = self._quic.host_cid.hex()[:8]
+        self._stream_buffers = {}   # 缓存每个流的分片数据：{stream_id: 累积的字节数据}
         
         if self.service_instance:
             self.service_instance.register_connection(self.client_id, self)
@@ -103,21 +104,32 @@ class NM_QUICProtocol(QuicConnectionProtocol):
     def quic_event_received(self, event):
         """处理QUIC事件"""
         if isinstance(event, StreamDataReceived):
-            try:
-                msg_str = event.data.decode('utf-8')
-                msg = json.loads(msg_str)
-                gl_logger.info(f"QUIC收到客户端 {self.client_id} 消息: {msg}")
+            stream_id = event.stream_id
+            # 累加当前流的分片数据
+            if stream_id not in self._stream_buffers:
+                self._stream_buffers[stream_id] = b""
+            self._stream_buffers[stream_id] += event.data
 
-                # 使用NM_Service的消息路由逻辑
-                if self.service_instance:
-                    asyncio.create_task(
-                        self.service_instance.route_message_quic(msg, self.client_id)
-                    )
+            # 只有当流结束（end_stream=True）时，才解析完整消息
+            if event.end_stream:
+                try:
+                    msg_str = event.data.decode('utf-8')
+                    msg = json.loads(msg_str)
+                    gl_logger.info(f"QUIC收到客户端 {self.client_id} 消息: {msg}")
 
-            except json.JSONDecodeError:
-                gl_logger.error(f"客户端 {self.client_id} 发送非JSON数据")
-            except Exception as e:
-                gl_logger.error(f"处理客户端 {self.client_id} 消息异常: {e}")
+                    # 使用NM_Service的消息路由逻辑
+                    if self.service_instance:
+                        asyncio.create_task(
+                            self.service_instance.route_message_quic(msg, self.client_id)
+                        )
+
+                except json.JSONDecodeError:
+                    gl_logger.error(f"客户端 {self.client_id} 发送非JSON数据")
+                except Exception as e:
+                    gl_logger.error(f"处理客户端 {self.client_id} 消息异常: {e}")
+                finally:
+                    # 处理完消息后，清空该流的缓存
+                    del self._stream_buffers[stream_id]
 
         elif isinstance(event, ConnectionTerminated):
             if self.service_instance:

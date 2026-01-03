@@ -45,6 +45,7 @@ function initWebSocket() {
             resetAllStatus();
             
             // 获取服务器升级文件列表
+            // console.log("ws建立后，获取服务器升级文件列表");
             getServerUpgradeFiles(false);
         }
     };
@@ -183,6 +184,7 @@ function bindEventListeners() {
         resetAllStatus();
         
         // 获取服务器升级文件列表
+        // console.log("切换端站后，获取服务器升级文件列表");
         getServerUpgradeFiles(false);
     });
 
@@ -203,11 +205,11 @@ function bindEventListeners() {
                     }
                 });
                 
-                // 切换端站时，重置所有状态
-                resetAllStatus();
+                // // 切换端站时，重置所有状态
+                // resetAllStatus();
                 
-                // 获取服务器升级文件列表
-                getServerUpgradeFiles(false);
+                // // 获取服务器升级文件列表
+                // getServerUpgradeFiles(false);
             }
         });
     }

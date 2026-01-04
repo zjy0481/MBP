@@ -124,7 +124,7 @@ class NM_Service():
         # 启动UDP监听工作线程
         self.__udp_loop_active = True
         self.__udp_loop_thread.start()
-        gl_logger.info("NM_Service UDP监听服务启动")
+        gl_logger.debug("NM_Service UDP监听服务启动")
 
         # --- 启动 Redis 监听 ---
         try:
@@ -263,7 +263,7 @@ class NM_Service():
         peer_ip, peer_port = addr
             
         try:
-            gl_logger.info(f"收到来自 [{peer_ip}:{peer_port}]的上报数据, 消息为： {msg_dict}")
+            gl_logger.debug(f"收到来自 [{peer_ip}:{peer_port}]的上报数据, 消息为： {msg_dict}")
             
             # 检查操作类型，处理 'report' 类型的消息
             op = msg_dict.get('op')
@@ -273,7 +273,7 @@ class NM_Service():
             sn = msg_dict.get('sn')
 
             if op == 'report':
-                gl_logger.info("正在处理上报消息...")
+                gl_logger.debug("正在处理上报消息...")
 
                 if (long == 0.0 and lat == 0.0):
                     gl_logger.warning(f"已忽略 long={long}, lat={lat} 的消息（异常的地理坐标）。")
@@ -304,23 +304,23 @@ class NM_Service():
                         # 如果更新失败，只记录警告，不影响主流程
                         gl_logger.warning(f"更新端站网络信息失败 (SN: {sn}): {update_result}")
                     else:
-                        gl_logger.info(f"成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
+                        gl_logger.debug(f"成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
 
-                gl_logger.info(f"成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
+                gl_logger.debug(f"成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
             elif (sn and op == 'heartbeat'):
                 update_success, update_result = services.update_terminal_network_info(sn, peer_ip, peer_port)
                 if not update_success:
                     # 如果更新失败，只记录警告，不影响主流程
                     gl_logger.warning(f"更新端站网络信息失败 (SN: {sn}): {update_result}")
                 else:
-                    gl_logger.info(f"收到新版心跳包，成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
+                    gl_logger.debug(f"收到新版心跳包，成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
             elif (sn and not op and not op_sub):
                 update_success, update_result = services.update_terminal_network_info(sn, peer_ip, peer_port)
                 if not update_success:
                     # 如果更新失败，只记录警告，不影响主流程
                     gl_logger.warning(f"更新端站网络信息失败 (SN: {sn}): {update_result}")
                 else:
-                    gl_logger.info(f"收到旧版心跳包，成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
+                    gl_logger.debug(f"收到旧版心跳包，成功更新 SN: {sn} 的网络信息为 {peer_ip}:{peer_port}。")
             else:
                 gl_logger.warning(f"已忽略 op={op}, op_sub={op_sub} 的消息（非上报消息）。")
 
@@ -332,7 +332,7 @@ class NM_Service():
         """处理精确匹配到的控制指令响应，并通过 Channel Layer 回复"""
         reply_channel_group = request_info['reply_channel']
         request_id = response_data.get('request_id')
-        gl_logger.info(f"匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
+        gl_logger.debug(f"匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
         
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -357,7 +357,7 @@ class NM_Service():
                 gl_logger.error("收到的控制指令缺少 'request_id'，予以忽略。")
                 return
 
-            gl_logger.info(f"收到Redis指令, 生成请求, ID: {request_id}, 发往 {ip}:{port}")
+            gl_logger.debug(f"收到Redis指令, 生成请求, ID: {request_id}, 发往 {ip}:{port}")
             
             request_to_send = json.dumps(payload).encode('utf-8')
             

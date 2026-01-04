@@ -115,7 +115,7 @@ class NM_QUICProtocol(QuicConnectionProtocol):
                 try:
                     msg_str = event.data.decode('utf-8')
                     msg = json.loads(msg_str)
-                    gl_logger.info(f"QUIC收到客户端 {self.client_id} 消息: {msg}")
+                    gl_logger.debug(f"QUIC收到客户端 {self.client_id} 消息: {msg}")
 
                     # 使用NM_Service的消息路由逻辑
                     if self.service_instance:
@@ -143,7 +143,7 @@ class NM_QUICProtocol(QuicConnectionProtocol):
             stream_id = self._quic.get_next_available_stream_id()
             self._quic.send_stream_data(stream_id, data, end_stream=True)
             self.transmit()
-            gl_logger.info(f"QUIC向客户端 {self.client_id} 发送: {msg_dict}")
+            gl_logger.debug(f"QUIC向客户端 {self.client_id} 发送: {msg_dict}")
         except Exception as e:
             gl_logger.error(f"QUIC向客户端 {self.client_id} 发送失败: {e}")
 
@@ -216,7 +216,7 @@ class NM_ServiceQUIC:
         """注册SN到client_id的映射"""
         self.sn_to_client_id[sn] = client_id
         self.client_id_to_sn[client_id] = sn
-        gl_logger.info(f"注册SN映射: SN={sn} -> client_id={client_id}")
+        gl_logger.debug(f"注册SN映射: SN={sn} -> client_id={client_id}")
 
     def unregister_connection(self, client_id: str):
         """注销QUIC连接"""
@@ -226,7 +226,7 @@ class NM_ServiceQUIC:
             if client_id in self.client_id_to_sn:
                 sn = self.client_id_to_sn.pop(client_id)
                 self.sn_to_client_id.pop(sn, None)
-                gl_logger.info(f"清理SN映射: SN={sn} -> client_id={client_id}")
+                gl_logger.debug(f"清理SN映射: SN={sn} -> client_id={client_id}")
             gl_logger.info(f"QUIC连接注销: {client_id}, 当前连接数: {len(self.connections)}")
 
     async def start(self):
@@ -374,7 +374,7 @@ class NM_ServiceQUIC:
     async def _handle_report_data_quic(self, msg_dict: Dict[str, Any], client_id: str):
         """QUIC版本处理端站上报数据"""
         try:
-            gl_logger.info(f"QUIC收到来自客户端 {client_id} 的上报数据: {msg_dict}")
+            gl_logger.debug(f"QUIC收到来自客户端 {client_id} 的上报数据: {msg_dict}")
             
             op = msg_dict.get('op')
             op_sub = msg_dict.get('op_sub')
@@ -383,7 +383,7 @@ class NM_ServiceQUIC:
             sn = msg_dict.get('sn')
 
             if op == 'report':
-                gl_logger.info("QUIC正在处理上报消息...")
+                gl_logger.debug("QUIC正在处理上报消息...")
 
                 if (long == 0.0 and lat == 0.0):
                     gl_logger.warning(f"QUIC已忽略 long={long}, lat={lat} 的消息（异常的地理坐标）。")
@@ -411,14 +411,18 @@ class NM_ServiceQUIC:
                 if sn:
                     # 注册SN到client_id的映射关系
                     self.register_sn_mapping(sn, client_id)
-                    gl_logger.info(f"QUIC成功处理SN: {sn} 的上报数据")
+                    gl_logger.debug(f"QUIC成功处理SN: {sn} 的上报数据")
 
-                gl_logger.info(f"QUIC成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
+                gl_logger.debug(f"QUIC成功将来自SN: {msg_dict.get('sn')} 的上报存入数据库。")
                 
             elif (sn and op == 'heartbeat'):
                 # QUIC心跳包处理 - 仅维护SN映射，不更新数据库
                 self.register_sn_mapping(sn, client_id)
-                gl_logger.info(f"QUIC收到心跳包，成功处理SN: {sn} 的映射关系")
+                gl_logger.debug(f"QUIC收到新版心跳包，成功处理SN: {sn} 的映射关系")
+
+            elif (sn and not op and not op_sub):
+                self.register_sn_mapping(sn, client_id)
+                gl_logger.debug(f"QUIC收到旧版心跳包，成功处理SN: {sn} 的映射关系")
             else:
                 gl_logger.warning(f"QUIC已忽略 op={op}, op_sub={op_sub} 的消息（非上报消息）。")
 
@@ -429,7 +433,7 @@ class NM_ServiceQUIC:
         """异步处理控制指令响应"""
         reply_channel_group = request_info['reply_channel']
         request_id = response_data.get('request_id')
-        gl_logger.info(f"QUIC匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
+        gl_logger.debug(f"QUIC匹配到请求 {request_id} 的响应，准备通过 Channel Layer 转发至组: {reply_channel_group}")
         
         channel_layer = get_channel_layer()
         if channel_layer:
@@ -465,7 +469,7 @@ class NM_ServiceQUIC:
                 gl_logger.warning(f"QUIC未找到SN {sn} 对应的client_id映射，可能客户端尚未建立连接或上报数据")
                 return
 
-            gl_logger.info(f"QUIC收到Redis指令, SN: {sn}, client_id: {client_id}, 请求ID: {request_id}")
+            gl_logger.debug(f"QUIC收到Redis指令, SN: {sn}, client_id: {client_id}, 请求ID: {request_id}")
             
             # 异步存储待处理请求
             async with self.lock:
@@ -477,16 +481,16 @@ class NM_ServiceQUIC:
             # 通过QUIC发送消息到指定客户端
             if client_id in self.connections:
                 self.connections[client_id].send_message(payload)
-                gl_logger.info(f"QUIC成功转发指令到客户端 {client_id}")
+                gl_logger.debug(f"QUIC成功转发指令到客户端 {client_id}")
             else:
-                gl_logger.warning(f"QUIC未找到客户端 {client_id} 的连接")
+                gl_logger.warning(f"QUIC在处理redis指令时，未找到客户端 {client_id} 的连接")
 
         except Exception as e:
             gl_logger.error(f"QUIC处理Redis命令时出错: {e}")
 
-    def set_udp_addr_port(self, ip: str, port: int):
-        """设置UDP地址和端口（保持API兼容，但QUIC版本使用不同机制）"""
-        gl_logger.info(f"QUIC版本忽略UDP地址设置: {ip}:{port}，使用配置: {self.host}:{self.port}")
+    # def set_udp_addr_port(self, ip: str, port: int):
+    #     """设置UDP地址和端口（保持API兼容，但QUIC版本使用不同机制）"""
+    #     gl_logger.debug(f"QUIC版本忽略UDP地址设置: {ip}:{port}，使用配置: {self.host}:{self.port}")
 
 
 # 全局QUIC版本NM_Service实例

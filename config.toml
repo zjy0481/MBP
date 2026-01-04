@@ -35,8 +35,11 @@ redis_db = 0
 redis_password = ""
 
 [logger_config]
-# 日志配置（暂不启用）
+# 日志配置（暂时只启用log_level）
 log_level = "INFO"
 log_file = "logs/mbp.log"
 log_max_size = "10MB"
 log_backup_count = 5
+
+[django_settings]
+DEBUG = true

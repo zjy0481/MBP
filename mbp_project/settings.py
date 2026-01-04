@@ -25,8 +25,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-=fy2^k!w9-n2zi0aox3h%@nkgn)m)9!d)10jo90$kdbu5a6%)w"
 
+
+from config import get_config
+config = get_config()
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config.get("django_settings.DEBUG", True)
 
 ALLOWED_HOSTS = ["192.168.0.115", "127.0.0.1", "124.71.145.68", "192.168.3.28"]
 
@@ -79,8 +82,7 @@ WSGI_APPLICATION = "mbp_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-from config import get_config
-config = get_config()
+
 
 DATABASES = {
     'default': {

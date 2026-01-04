@@ -16,6 +16,15 @@ log_colors_config = {
     'CRITICAL': 'bold_red',
 }
 
+# 日志等级映射
+LOG_LEVELS = {
+    'DEBUG': logging.DEBUG,
+    'INFO': logging.INFO,
+    'WARNING': logging.WARNING,
+    'ERROR': logging.ERROR,
+    'CRITICAL': logging.CRITICAL,
+    'FATAL': logging.CRITICAL  # 将FATAL映射到CRITICAL
+}
 
 class ExtendHandler(logging.Handler, object):
     """
@@ -94,10 +103,11 @@ class LoggerManage(object):
     # web消息队列
     __to_web_messages = None
 
-    def __init__(self, app_name="youApp", log_path='', log_level=logging.DEBUG, log_file_size=10, log_file_backup=5,
+    def __init__(self, app_name="youApp", log_path='', log_level="INFO", log_file_size=10, log_file_backup=5,
                  log_formatter_str=''):
         """
         :param app_name: 应用程序名称，作为创建日志的根节点名称
+        :param log_level: 日志等级，支持 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'
         初始化日志模块，创建相应的logger，handler，filter，formatter
         """
         # 初始化属性
@@ -105,7 +115,9 @@ class LoggerManage(object):
         if log_path == '' or not os.path.isdir(log_path):
             cur_path = os.path.abspath(os.path.dirname(__file__))
             self.__log_path = cur_path + "/Logs/"
-        self.__log_level = log_level
+        
+        # 转换日志等级字符串为logging常量
+        self.__log_level = self._get_log_level(log_level)
         self.__log_file_size = log_file_size * 1024 * 1024  # 转换成 M bytes
         self.__log_file_backup = log_file_backup
         if log_formatter_str == '':
@@ -117,7 +129,7 @@ class LoggerManage(object):
         # 如果不指定name则返回root对象，多次使用相同的name调用getLogger方法返回同一个logger对象。
         self.logger = logging.getLogger()
         self.logger.handlers.clear()  # 清除logger,避免多个文件引用重复打印log
-        self.logger.setLevel(self.__log_level)  # Log等级总开关。指定日志的最低输出级别，默认为WARN级别
+        self.logger.setLevel(self.__log_level)  # Log等级总开关。指定日志的最低输出级别
 
         # 第二步，创建一个文件handler，用于写入日志文件
         # 一个logger对象可以通过addHandler方法添加0到多个handler，
@@ -159,8 +171,75 @@ class LoggerManage(object):
         self.logger.addHandler(ch)
         self.logger.addHandler(eh)
 
+    def _get_log_level(self, level_str):
+        """
+        将日志等级字符串转换为logging常量
+        """
+        level_str = level_str.upper()
+        if level_str in LOG_LEVELS:
+            return LOG_LEVELS[level_str]
+        else:
+            # 默认使用INFO级别
+            print(f"未知的日志等级 '{level_str}'，使用默认的INFO级别")
+            return logging.INFO
+
+    def set_log_level(self, level_str):
+        """
+        动态设置日志等级
+        :param level_str: 日志等级字符串，支持 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL', 'FATAL'
+        """
+        new_level = self._get_log_level(level_str)
+        self.__log_level = new_level
+        self.logger.setLevel(new_level)
+        
+        # 同时更新所有handler的等级
+        for handler in self.logger.handlers:
+            handler.setLevel(new_level)
+        
+        print(f"日志等级已设置为: {level_str}")
+
+    def get_log_level(self):
+        """
+        获取当前日志等级
+        :return: 当前日志等级字符串
+        """
+        level_map = {v: k for k, v in LOG_LEVELS.items()}
+        return level_map.get(self.__log_level, 'UNKNOWN')
+
     def get_logger(self):
         return self.logger
+
+    @classmethod
+    def set_global_log_level(cls, level_str):
+        """
+        类方法：全局设置所有logger的日志等级
+        :param level_str: 日志等级字符串
+        """
+        # 直接获取logging等级，不创建LoggerManage实例
+        level = cls._get_log_level_static(level_str)
+        logging.getLogger().setLevel(level)
+        print(f"全局日志等级已设置为: {level_str}")
+    
+    @staticmethod
+    def _get_log_level_static(level_str):
+        """
+        静态方法：将日志等级字符串转换为logging常量（不创建实例）
+        """
+        level_str = level_str.upper()
+        if level_str in LOG_LEVELS:
+            return LOG_LEVELS[level_str]
+        else:
+            # 默认使用INFO级别
+            print(f"未知的日志等级 '{level_str}'，使用默认的INFO级别")
+            return logging.INFO
+
+    @classmethod
+    def get_available_log_levels(cls):
+        """
+        获取可用的日志等级列表
+        :return: 可用的日志等级列表
+        """
+        return list(LOG_LEVELS.keys())
 
     #检查队列绑定状态
     @classmethod
@@ -183,17 +262,37 @@ class LoggerManage(object):
         else:
             print("请先绑定Web消息队列。Web消息发送失败：" + str(msg))  # 这里直接打印（不发给Web），否则会递归调用
 
-# 以下是测试代码
+# 使用示例和测试代码
 if __name__ == '__main__':
-    logger = LoggerManage(app_name='logTest').get_logger()
+    # 创建日志管理器，默认使用INFO级别（不显示debug）
+    logger_manager = LoggerManage(app_name='logTest')
+    logger = logger_manager.get_logger()
     LoggerManage.bind_web_message_queue(Queue())
 
-    logger.debug('这是 logger debug message')
-    logger.info('这是 logger info message')
-    logger.warning('这是 logger warning message')
-    logger.error('这是 logger error message')
-    logger.critical('这是 logger critical message')
+    print("=== 当前日志等级测试 ===")
+    print(f"当前日志等级: {logger_manager.get_log_level()}")
+    print(f"可用日志等级: {logger_manager.get_available_log_levels()}")
 
-    time.sleep(10)
+    print("\n=== 不同级别日志测试 ===")
+    logger.debug('这是 logger debug message - 不会显示')
+    logger.info('这是 logger info message - 会显示')
+    logger.warning('这是 logger warning message - 会显示')
+    logger.error('这是 logger error message - 会显示')
+    logger.critical('这是 logger critical message - 会显示')
+    logger.fatal('这是 logger fatal message - 会显示')
 
-    print(LoggerManage.__to_web_messages.get())
+    print("\n=== 动态修改日志等级为DEBUG ===")
+    logger_manager.set_log_level('DEBUG')
+    print(f"当前日志等级: {logger_manager.get_log_level()}")
+    logger.debug('这是 logger debug message - 现在会显示')
+
+    print("\n=== 动态修改日志等级为ERROR ===")
+    logger_manager.set_log_level('ERROR')
+    print(f"当前日志等级: {logger_manager.get_log_level()}")
+    logger.info('这是 logger info message - 现在不会显示')
+    logger.error('这是 logger error message - 现在会显示')
+
+    print("\n=== 全局设置日志等级 ===")
+    LoggerManage.set_global_log_level('WARNING')
+    
+    print("\n测试完成！")

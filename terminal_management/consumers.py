@@ -35,7 +35,7 @@ class DataConsumer(AsyncWebsocketConsumer):
         )
         self.pending_replies = {}   # 用于存放等待中请求的 Future 对象，键为request_id
         await self.accept()
-        gl_logger.info(f"WebSocket 链接已建立: {self.channel_name}")
+        gl_logger.debug(f"WebSocket 链接已建立: {self.channel_name}")
 
     async def disconnect(self, close_code):
         # 在断开连接时，取消所有正在运行的后台任务
@@ -46,11 +46,11 @@ class DataConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
-        gl_logger.info(f"WebSocket 链接已关闭: {self.channel_name} with code {close_code}")
+        gl_logger.debug(f"WebSocket 链接已关闭: {self.channel_name} with code {close_code}")
 
     # 从前端接收消息
     async def receive(self, text_data):
-        gl_logger.info(f"接收到前端消息: {text_data}")
+        gl_logger.debug(f"接收到前端消息: {text_data}")
         data = json.loads(text_data)
         message_type = data.get('type')
         task = None
@@ -75,7 +75,7 @@ class DataConsumer(AsyncWebsocketConsumer):
             gl_logger.error("在获取最新上报数据时，缺少SN参数")
             return
             
-        gl_logger.info(f"正在获取最新上报数据， SN: {sn}")
+        gl_logger.debug(f"正在获取最新上报数据， SN: {sn}")
         try:
             # 使用 database_sync_to_async 将同步的数据库操作转换为异步可调用对象
             db_query = database_sync_to_async(get_latest_report_by_sn)
@@ -84,14 +84,14 @@ class DataConsumer(AsyncWebsocketConsumer):
 
             response_data = None
             if success and report:
-                gl_logger.info(f"成功获取了端站（ SN: {sn} ）的最新上报数据")
+                gl_logger.debug(f"成功获取了端站（ SN: {sn} ）的最新上报数据")
                 # 将模型实例安全地转换为字典
                 response_data = {
                     field.name: str(getattr(report, field.name))
                     for field in report._meta.fields
                 }
             elif success:
-                gl_logger.info(f"数据库查询成功，但端站（ SN: {sn} ）没有历史上报数据")
+                gl_logger.warning(f"数据库查询成功，但端站（ SN: {sn} ）没有历史上报数据")
             else:
                 gl_logger.error(f"数据库查询端站数据失败， SN: {sn}， Error: {report}")
 
@@ -104,7 +104,7 @@ class DataConsumer(AsyncWebsocketConsumer):
         """专门处理控制指令"""
         module = data.get('module')
         sn = data.get('sn')
-        gl_logger.info(f"正在处理控制指令，模块: {module}")
+        gl_logger.debug(f"正在处理控制指令，模块: {module}")
 
         # 检查 Redis 连接是否存在
         if not redis_publisher:
@@ -221,7 +221,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                         chunk_data = f.read(chunk_size)
                         payload['chunkData'] = base64.b64encode(chunk_data).decode('utf-8')
                     
-                    gl_logger.info(f"成功读取文件分片: {file_name}, 分片: {chunk_index}, 大小: {len(chunk_data)}B")
+                    gl_logger.debug(f"成功读取文件分片: {file_name}, 分片: {chunk_index}, 大小: {len(chunk_data)}B")
                 except Exception as e:
                     gl_logger.error(f"读取文件分片失败: {file_name}, 分片: {chunk_index}, 错误: {e}")
                     raise ValueError(f"读取文件分片失败: {e}")
@@ -274,7 +274,7 @@ class DataConsumer(AsyncWebsocketConsumer):
             }
 
             redis_publisher.publish("udp-command", json.dumps(command_to_send))
-            gl_logger.info(f"已向 Redis 'udp-command' 频道发布指令: {command_to_send}")
+            gl_logger.debug(f"已向 Redis 'udp-command' 频道发布指令: {command_to_send}")
 
             # 等待 Future 被设置结果，设置10秒超时，对于更新功能设置60秒超时
             # 为不同类型的命令设置不同的超时时间
@@ -318,7 +318,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                 'frontend_request_id': frontend_request_id
             })
         except asyncio.CancelledError:
-            gl_logger.info(f"控制指令 '{module}' 因连接关闭而被取消。")
+            gl_logger.warning(f"控制指令 '{module}' 因连接关闭而被取消。")
             # 此处无需向客户端发送消息，因为它已经断开了
         except Exception as e:
             gl_logger.error(f"处理控制指令 '{module}' 时发生异常: {e}", exc_info=True)
@@ -336,7 +336,7 @@ class DataConsumer(AsyncWebsocketConsumer):
     # 用于接收 NM_Service 回复的处理器
     async def udp_reply(self, event):
         message_str = event['message']
-        gl_logger.info(f"收到来自 NM_Service 的UDP回复: {message_str}")
+        gl_logger.debug(f"收到来自 NM_Service 的UDP回复: {message_str}")
         
         response_data = json.loads(message_str)
         # 使用 request_id 来查找 future
@@ -352,7 +352,7 @@ class DataConsumer(AsyncWebsocketConsumer):
     # 封装一个向客户端发送消息的辅助函数
     async def send_to_client(self, msg_type, data):
         message_to_send = {'message': {'type': msg_type, **data}}
-        gl_logger.info(f"Sending message to client: {json.dumps(message_to_send)}")
+        gl_logger.debug(f"Sending message to client: {json.dumps(message_to_send)}")
         await self.send(text_data=json.dumps(message_to_send))
 
     # 从 channel layer 接收广播消息并推送给前端
@@ -381,7 +381,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                 'type': 'latest_report_data', # 使用新的、专属的类型
                 'data': antenna_report_dict
             }
-            gl_logger.info(f"正在向antenna页面发送广播更新: {json.dumps({'message': message_for_antenna})}")
+            gl_logger.debug(f"正在向antenna页面发送广播更新: {json.dumps({'message': message_for_antenna})}")
             # 直接发送，不经过 send_to_client 的额外包装
             await self.send(text_data=json.dumps({'message': message_for_antenna}))
         else:
@@ -397,7 +397,7 @@ class DataConsumer(AsyncWebsocketConsumer):
                 'type': 'gis_update_data', # 使用新的、专属的类型
                 'data': gis_report_dict
             }
-            gl_logger.info(f"正在向GIS页面发送专属广播更新: {json.dumps({'message': message_for_gis})}")
+            gl_logger.debug(f"正在向GIS页面发送专属广播更新: {json.dumps({'message': message_for_gis})}")
             # 直接发送，不经过 send_to_client 的额外包装
             await self.send(text_data=json.dumps({'message': message_for_gis}))
         else:

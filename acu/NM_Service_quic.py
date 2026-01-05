@@ -113,7 +113,7 @@ class NM_QUICProtocol(QuicConnectionProtocol):
             # 只有当流结束（end_stream=True）时，才解析完整消息
             if event.end_stream:
                 try:
-                    msg_str = event.data.decode('utf-8')
+                    msg_str = self._stream_buffers[stream_id].decode('utf-8')
                     msg = json.loads(msg_str)
                     gl_logger.debug(f"QUIC收到客户端 {self.client_id} 消息: {msg}")
 

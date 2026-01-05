@@ -172,7 +172,7 @@ function handleWebSocketMessage(message) {
                         pitchMotoState: responseData.pitch_moto_stat === 0 ? 0 : 1,
                         yawLimitState: responseData.yaw_lim_stat === 0 ? 0 : 1,
                         pitchLimitState: responseData.pitch_lim_stat === 0 ? 0 : 1,
-                        RTCState: responseData.RTC_stat === 0 ? 0 : 1,
+                        RTCState: responseData.rtc_stat === 0 ? 0 : 1,
                     };
                     showDevicesStatus(statusMap);
                     infoMessage('设备状态查询成功！');

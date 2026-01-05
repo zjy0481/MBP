@@ -94,7 +94,9 @@ function handleWebSocketMessage(message) {
             console.log("success为true且有result字段");
             console.log(responseData.result);
             if (responseData.result === '0' || responseData.result === 0) {
-                infoMessage(`操作 ${module} 成功！`);
+                if (module !== 'software_upgrade') {    // 端站升级无回复，不进行提示
+                    infoMessage(`操作 ${module} 成功！`);
+                }
             } else {
                 let errorMsg = `操作 ${module} 失败。`;
                 if (responseData.error) {
@@ -131,7 +133,7 @@ function handleWebSocketMessage(message) {
                             const fileData = {
                                 id: file.fileId || file.id, // 兼容旧版本
                                 name: file.fileName || file.name,
-                                type: file.fileType === 'adu' ? 'ADU' : 'ACU',
+                                type: file.fileType || '未知',
                                 size: formatFileSize(file.fileSize || file.size), // 兼容fileSize和size字段
                                 uploadTime: formatDateTime(file.uploadTime),
                                 status: typeof file.status === 'number' ? (file.status === 0 ? '可用' : '不可用') : file.status, // 兼容数字和字符串类型的status
@@ -186,6 +188,8 @@ function bindEventListeners() {
         // 获取服务器升级文件列表
         // console.log("切换端站后，获取服务器升级文件列表");
         getServerUpgradeFiles(false);
+        // 切换端站后，请求端站升级文件列表
+        sendControlCommand('upload_file_list', {});
     });
 
     // 监听全局端站状态变化
@@ -297,11 +301,13 @@ function setInputValue(elementId, value) {
                 el.value = value;
                 break;
             case 'select':
-                // 选择框需要确保value存在于选项中
-                if (value !== '' && Array.from(el.options).some(opt => opt.value === value)) {
-                    el.value = value;
+                // 选择框处理：value为数值索引
+                // 确保value是合法数值且在有效范围内
+                const index = Number(value);
+                if (!isNaN(index) && index >= 0 && index < el.options.length) {
+                    el.selectedIndex = index + 1;
                 } else {
-                    // 如果值不存在或为空，选择第一个选项
+                    // 如果值无效，选择第一个选项
                     el.selectedIndex = 0;
                 }
                 break;
@@ -735,7 +741,7 @@ function completeFileUpload(fileId, callback) {
     });
 }
 
-// 生成升级文件列表表格行
+// 生成端站升级文件列表表格行
 function generateUpgradeFileTableRow(fileData) {
     const tableBody = document.getElementById('upgrade_files_table_body');
     if (!tableBody) return;
@@ -761,7 +767,7 @@ function generateUpgradeFileTableRow(fileData) {
     
     // 上传时间列
     const timeCell = document.createElement('td');
-    timeCell.textContent = fileData.uploadTime;
+    timeCell.textContent = new Date(fileData.uploadTime * 1000).toLocaleString();  // 时间戳转换
     row.appendChild(timeCell);
     
     // 状态列
@@ -800,7 +806,8 @@ function generateUpgradeFileTableRow(fileData) {
     upgradeBtn.addEventListener('click', () => {
         // 发送升级请求
         sendControlCommand('software_upgrade', {
-            fileId: fileData.id
+            fileId: fileData.id,
+            fileType: fileData.type
         });
         infoMessage('升级命令已发送！');
     });
@@ -810,7 +817,7 @@ function generateUpgradeFileTableRow(fileData) {
     tableBody.appendChild(row);
 }
 
-// 清空升级文件列表
+// 清空端站升级文件列表
 function clearUpgradeFilesTable() {
     const tableBody = document.getElementById('upgrade_files_table_body');
     if (tableBody) {
@@ -836,9 +843,19 @@ function getServerUpgradeFiles(show_info_message = true) {
         .then(response => response.json())
         .then(data => {
             if (data && data.files && data.files.length > 0) {
+                // 创建Set存储已添加的fileName，用于去重
+                const addedFileNames = new Set();
+                
                 data.files.forEach(file => {
-                    // 生成服务器升级文件列表表格行
-                    generateServerUpgradeFileTableRow(file);
+                    // 检查fileName是否已存在
+                    if (!addedFileNames.has(file.name)) {
+                        // 添加到Set中
+                        addedFileNames.add(file.name);
+                        // 生成服务器升级文件列表表格行
+                        generateServerUpgradeFileTableRow(file);
+                    } else {
+                        console.log(`跳过重复文件: ${file.name}`);
+                    }
                 });
             } else {
                 // 如果没有文件，添加一个空行提示

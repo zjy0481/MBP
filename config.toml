@@ -22,6 +22,10 @@ quic_idle_timeout = 180.0
 udp_host = "127.0.0.1"
 udp_port = 59999
 
+[function_config]
+# 功能配置
+chunk_size = 4096           # systemmanage升级文件上传分片大小（字节）1048576
+
 [web_server_config]
 # Web服务配置（暂不启用）
 web_host = "127.0.0.1"
@@ -36,7 +40,7 @@ redis_password = ""
 
 [logger_config]
 # 日志配置（暂时只启用log_level）
-log_level = "INFO"
+log_level = "DEBUG"
 log_file = "logs/mbp.log"
 log_max_size = "10MB"
 log_backup_count = 5

@@ -152,5 +152,11 @@
 {% endblock %}
 
 {% block script %}
+<script>
+    // 从配置文件中获取的chunk_size
+    window.systemConfig = {
+        chunkSize: {{ chunk_size }}
+    };
+</script>
 <script src="{% static 'js/stationimport.js' %}"></script>
 {% endblock %}

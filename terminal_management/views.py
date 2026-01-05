@@ -14,6 +14,15 @@ import os
 import glob
 from pathlib import Path
 from mbp_project.settings import BASE_DIR
+import sys
+import os
+
+# 将项目根目录添加到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from config import Config
+
+# 创建全局Config实例
+config = Config()
 
 def home(request):
     """
@@ -318,9 +327,13 @@ def systemmanage(request):
     if success:
         terminals_list = terminals_or_error.select_related('ship').order_by('ship__ship_name', 'sn')
 
+    # 从配置文件中获取chunk_size
+    chunk_size = config.get('function_config.chunk_size', 1024)  # 默认1KB
+
     context = {
         'terminals': terminals_list,
-        'error': None if success else terminals_or_error
+        'error': None if success else terminals_or_error,
+        'chunk_size': chunk_size
     }
     return render(request, 'systemmanage.html', context)
 
@@ -390,9 +403,7 @@ def gis_page(request):
 
 @login_required
 def stationimport(request):
-    """
-    基站导入页面视图函数
-    """
+    """基站导入页面视图函数"""
     # 使用services中的函数获取数据
     success, bts_list = services.get_base_stations_by_region()
     if not success:
@@ -409,13 +420,16 @@ def stationimport(request):
         messages.error(request, terminals)
         terminals = []
     
+    # 从配置文件中获取chunk_size
+    chunk_size = config.get('function_config.chunk_size', 1024)  # 默认1KB
+    
     context = {
         'bts_list': bts_list,
         'regions': regions,
         'terminals': terminals,
-        'error': request.GET.get('error', '')
+        'error': request.GET.get('error', ''),
+        'chunk_size': chunk_size
     }
-    
     return render(request, 'stationimport.html', context)
 
 @login_required

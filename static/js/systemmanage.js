@@ -395,7 +395,7 @@ function handleVersionResponse(data) {
     }
 }
 
-// 开始文件上传流程
+// 开始文件上传流程，已弃用（使用uploadServerFile）
 function startFileUpload(file, fileType, progressBar) {
     // 生成唯一的fileId
     const fileId = generateFileId(file);
@@ -631,7 +631,7 @@ function uploadServerFile(fileName, fileType, totalSize, progressBar, callback) 
     const fileId = generateFileId({name: fileName});
     
     // 上传参数配置
-    const chunkSize = 1024; // 1KB per chunk
+    const chunkSize = window.systemConfig?.chunkSize || 1024; // 使用配置文件中的值，默认1KB
     const totalChunks = Math.ceil(totalSize / chunkSize);
     
     // 初始化文件上传

@@ -219,5 +219,11 @@
 {% endblock %}
 
 {% block page_script %}
+<script>
+    // 从后端传递的配置参数
+    window.systemConfig = {
+        chunkSize: {{ chunk_size }}  // 从配置文件读取的文件上传分片大小
+    };
+</script>
 <script src="{% static 'js/systemmanage.js' %}"></script>
 {% endblock %}
